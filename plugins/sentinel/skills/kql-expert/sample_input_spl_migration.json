@@ -1,0 +1,7 @@
+{
+  "task": "migrate_spl_to_kql",
+  "spl_query": "index=windows EventCode=4625\n| stats count by src_ip, user\n| where count > 5\n| eval risk_score=case(count>20, \"Critical\", count>10, \"High\", count>5, \"Medium\")\n| table _time, src_ip, user, count, risk_score\n| sort -count",
+  "data_model": "Authentication (CIM)",
+  "target_asim_schema": "Authentication",
+  "context": "Failed logon detection rule from Splunk ES"
+}

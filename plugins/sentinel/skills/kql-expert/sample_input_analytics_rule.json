@@ -1,0 +1,21 @@
+{
+  "task": "create_analytics_rule",
+  "detection_hypothesis": "Detect brute force authentication attempts against Azure AD accounts",
+  "requirements": {
+    "data_sources": ["Azure AD Sign-in Logs", "On-premises authentication logs"],
+    "detection_criteria": {
+      "failed_attempts_threshold": 10,
+      "time_window": "5 minutes",
+      "unique_accounts_threshold": 3
+    },
+    "severity": "High",
+    "mitre_tactics": ["Credential Access"],
+    "mitre_techniques": ["T1110 - Brute Force"],
+    "entity_mapping": ["Account", "IP", "Host"],
+    "false_positive_considerations": [
+      "Exclude service accounts from known automation systems",
+      "Exclude legitimate password reset flows",
+      "Allowlist corporate VPN IP ranges"
+    ]
+  }
+}

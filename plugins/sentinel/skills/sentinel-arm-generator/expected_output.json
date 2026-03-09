@@ -1,0 +1,124 @@
+{
+  "template": {
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "workspace": {
+        "type": "String"
+      }
+    },
+    "resources": [
+      {
+        "id": "[concat(resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspace'), 'Microsoft.SecurityInsights'),'/alertRules/a1b2c3d4-e5f6-7890-abcd-ef1234567890')]",
+        "name": "[concat(parameters('workspace'),'/Microsoft.SecurityInsights/a1b2c3d4-e5f6-7890-abcd-ef1234567890')]",
+        "type": "Microsoft.OperationalInsights/workspaces/providers/alertRules",
+        "kind": "Scheduled",
+        "apiVersion": "2023-12-01-preview",
+        "properties": {
+          "displayName": "Multiple Failed Azure AD Sign-In Attempts",
+          "description": "Detects multiple failed authentication attempts from a single source by analyzing SigninLogs logs with a threshold of 5 events.",
+          "severity": "High",
+          "enabled": false,
+          "query": "SigninLogs\n| where ResultType != \"0\"\n| where AppDisplayName != \"Microsoft Authentication Broker\"\n| summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)\n| where FailedAttempts >= 5\n| project TimeGenerated, UserPrincipalName, IPAddress, FailedAttempts",
+          "queryFrequency": "PT5M",
+          "queryPeriod": "PT10M",
+          "triggerOperator": "GreaterThan",
+          "triggerThreshold": 0,
+          "suppressionDuration": "PT1H",
+          "suppressionEnabled": false,
+          "tactics": [
+            "CredentialAccess",
+            "InitialAccess"
+          ],
+          "techniques": [
+            "T1078",
+            "T1110"
+          ],
+          "subTechniques": [
+            "T1110.001",
+            "T1110.003"
+          ],
+          "incidentConfiguration": {
+            "createIncident": true,
+            "groupingConfiguration": {
+              "enabled": false,
+              "reopenClosedIncident": false,
+              "lookbackDuration": "PT5H",
+              "matchingMethod": "AllEntities",
+              "groupByEntities": [],
+              "groupByAlertDetails": [],
+              "groupByCustomDetails": []
+            }
+          },
+          "eventGroupingSettings": {
+            "aggregationKind": "SingleAlert"
+          },
+          "entityMappings": [
+            {
+              "entityType": "Account",
+              "fieldMappings": [
+                {
+                  "identifier": "FullName",
+                  "columnName": "UserPrincipalName"
+                }
+              ]
+            },
+            {
+              "entityType": "IP",
+              "fieldMappings": [
+                {
+                  "identifier": "Address",
+                  "columnName": "IPAddress"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "validation_summary": {
+    "rule_guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "display_name": "Multiple Failed Azure AD Sign-In Attempts",
+    "description": "Detects multiple failed authentication attempts from a single source by analyzing SigninLogs logs with a threshold of 5 events.",
+    "severity": "High",
+    "severity_rationale": "High severity assigned due to indicators of active attack or critical security threat",
+    "query_frequency": "PT5M",
+    "query_period": "PT10M",
+    "frequency_rationale": "5-minute frequency for real-time detection of active threats",
+    "trigger_operator": "GreaterThan",
+    "trigger_threshold": 0,
+    "mitre_tactics": [
+      "CredentialAccess",
+      "InitialAccess"
+    ],
+    "mitre_techniques": [
+      "T1078",
+      "T1110"
+    ],
+    "mitre_sub_techniques": [
+      "T1110.001",
+      "T1110.003"
+    ],
+    "mitre_rationale": "Auto-detected patterns: Brute Force, Failed Login",
+    "detected_entities": [
+      {
+        "entity_type": "Account",
+        "mapped_columns": [
+          "UserPrincipalName"
+        ]
+      },
+      {
+        "entity_type": "IP",
+        "mapped_columns": [
+          "IPAddress"
+        ]
+      }
+    ],
+    "data_sources": [
+      "SigninLogs"
+    ],
+    "user_overrides": {}
+  },
+  "deployment_instructions": "Azure CLI command: az deployment group create --resource-group <rg> --template-file sentinel-rule-multiple-failed-azure-ad-sign-in-attempts.json --parameters workspace=<workspace-name>"
+}

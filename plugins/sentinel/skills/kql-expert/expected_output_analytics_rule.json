@@ -1,0 +1,76 @@
+{
+  "status": "rule_created",
+  "rule_configuration": {
+    "name": "Brute Force Authentication Attempts (ASIM)",
+    "description": "Detects brute force authentication attempts across all authentication sources using ASIM normalization",
+    "severity": "High",
+    "enabled": true,
+    "query": "// Brute Force Authentication Detection using ASIM\nlet threshold = 10;\nlet timeframe = 5m;\nlet accountExclusions = _GetWatchlist('ServiceAccounts') | project SearchKey;\n_Im_Authentication(\n    starttime=ago(timeframe),\n    endtime=now(),\n    eventresult='Failure'\n)\n| where TargetUsername !in (accountExclusions)  // Exclude service accounts\n| summarize\n    FailedAttempts = count(),\n    TargetAccounts = make_set(TargetUsername),\n    FirstAttempt = min(TimeGenerated),\n    LastAttempt = max(TimeGenerated)\n    by SrcIpAddr, bin(TimeGenerated, 5m)\n| where FailedAttempts >= threshold\n| extend\n    AttackDuration = LastAttempt - FirstAttempt,\n    UniqueAccounts = array_length(TargetAccounts)\n| where UniqueAccounts >= 3  // Multiple accounts targeted\n| project\n    TimeGenerated,\n    SrcIpAddr,\n    FailedAttempts,\n    UniqueAccounts,\n    AttackDuration,\n    TargetAccounts",
+    "scheduling": {
+      "queryFrequency": "PT5M",
+      "queryPeriod": "PT5M",
+      "triggerOperator": "GreaterThan",
+      "triggerThreshold": 0
+    },
+    "entity_mappings": [
+      {
+        "entityType": "IP",
+        "fieldMappings": [
+          {
+            "identifier": "Address",
+            "columnName": "SrcIpAddr"
+          }
+        ]
+      },
+      {
+        "entityType": "Account",
+        "fieldMappings": [
+          {
+            "identifier": "Name",
+            "columnName": "TargetAccounts"
+          }
+        ]
+      }
+    ],
+    "mitre_attack": {
+      "tactics": ["CredentialAccess"],
+      "techniques": ["T1110"]
+    },
+    "alert_details": {
+      "alertDisplayNameFormat": "Brute force attack from {{SrcIpAddr}} targeting {{UniqueAccounts}} accounts",
+      "alertDescriptionFormat": "{{FailedAttempts}} failed authentication attempts detected from IP {{SrcIpAddr}} over {{AttackDuration}}"
+    }
+  },
+  "watchlists_required": [
+    {
+      "name": "ServiceAccounts",
+      "description": "Service accounts to exclude from brute force detection",
+      "searchKey": "AccountName",
+      "example_entries": [
+        "svc-automation@contoso.com",
+        "svc-monitoring@contoso.com"
+      ]
+    }
+  ],
+  "testing_recommendations": [
+    "Use 'Test with current data' feature to simulate 50 executions",
+    "Verify watchlist exclusions work correctly",
+    "Check false positive rate over 24-48 hours",
+    "Validate entity mappings appear in incidents",
+    "Confirm MITRE ATT&CK tags display correctly"
+  ],
+  "tuning_guidance": {
+    "reduce_false_positives": [
+      "Adjust threshold based on environment (10 is moderate, 20 is conservative)",
+      "Add corporate VPN IP ranges to TrustedIPs watchlist",
+      "Create automation rule for known-good patterns",
+      "Use time-of-day filters for batch processes"
+    ],
+    "increase_detection": [
+      "Lower threshold to 5 for critical accounts",
+      "Add unique IP count threshold",
+      "Correlate with impossible travel detections",
+      "Monitor for account lockouts following failed attempts"
+    ]
+  }
+}

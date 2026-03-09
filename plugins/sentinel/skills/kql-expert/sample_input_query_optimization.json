@@ -1,0 +1,10 @@
+{
+  "task": "optimize_query",
+  "query": "SecurityEvent\n| extend LowercaseAccount = tolower(Account)\n| join kind=inner (\n    IdentityInfo\n    | project AccountName, Department\n) on $left.Account == $right.AccountName\n| where EventID == 4625\n| where TimeGenerated > ago(1h)\n| where CommandLine contains \"powershell\"\n| sort by TimeGenerated desc\n| take 100",
+  "context": "analytics_rule",
+  "current_issues": [
+    "Query times out after 3 minutes",
+    "Excessive CPU consumption",
+    "Resource threshold warnings"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "kql_query": "SigninLogs\n| where ResultType != \"0\"\n| where AppDisplayName != \"Microsoft Authentication Broker\"\n| summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)\n| where FailedAttempts >= 5\n| project TimeGenerated, UserPrincipalName, IPAddress, FailedAttempts",
+  "context": {
+    "conversation_context": "User is developing detection for brute force authentication attacks against Azure AD",
+    "user_overrides": {}
+  }
+}

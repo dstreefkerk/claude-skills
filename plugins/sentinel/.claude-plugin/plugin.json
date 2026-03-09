@@ -1,0 +1,8 @@
+{
+  "name": "sentinel",
+  "description": "Microsoft Sentinel skills — Codeless Connector Framework, KQL expertise, ARM template generation, and use case documentation.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Daniel Streefkerk"
+  }
+}

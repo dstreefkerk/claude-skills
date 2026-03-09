@@ -1,0 +1,47 @@
+{
+  "status": "optimization_complete",
+  "issues_found": [
+    {
+      "severity": "CRITICAL",
+      "issue_type": "late_time_filter",
+      "description": "TimeGenerated filter appears after join operation",
+      "recommendation": "Move TimeGenerated filter immediately after table reference",
+      "line_number": 8
+    },
+    {
+      "severity": "HIGH",
+      "issue_type": "contains_instead_of_has",
+      "description": "Using 'contains' for term search instead of 'has'",
+      "recommendation": "Replace 'contains' with 'has' for term-based searching",
+      "line_number": 9
+    },
+    {
+      "severity": "HIGH",
+      "issue_type": "join_missing_time_filter",
+      "description": "Join subquery does not include TimeGenerated filter",
+      "recommendation": "Add TimeGenerated filter to join subquery",
+      "line_number": 3
+    },
+    {
+      "severity": "MEDIUM",
+      "issue_type": "tolower_comparison",
+      "description": "Using tolower() before comparison is inefficient",
+      "recommendation": "Use case-insensitive operator (=~) instead",
+      "line_number": 2
+    },
+    {
+      "severity": "MEDIUM",
+      "issue_type": "sort_take_instead_of_top",
+      "description": "Using 'sort | take' instead of 'top'",
+      "recommendation": "Replace with 'top 100 by TimeGenerated desc'",
+      "line_number": 10
+    }
+  ],
+  "optimized_query": "// Optimized Query - Expected 10-50x performance improvement\nSecurityEvent\n| where TimeGenerated > ago(1h)  // TIME FILTER FIRST\n| where EventID == 4625           // INDEXED FILTER SECOND\n| where CommandLine has \"powershell\"  // TERM INDEX (not contains)\n| join kind=inner hint.strategy=broadcast (\n    IdentityInfo\n    | where TimeGenerated > ago(1h)  // TIME IN SUBQUERY TOO\n    | project AccountName, Department\n) on $left.Account == $right.AccountName\n| top 100 by TimeGenerated desc    // TOP instead of sort+take\n| project TimeGenerated, Computer, Account, CommandLine, Department",
+  "estimated_improvement": "10-50x faster execution, reduced CPU from ~200 seconds to ~5-10 seconds",
+  "validation": {
+    "syntax_valid": true,
+    "best_practices_compliant": true,
+    "entity_mapping_ready": true
+  }
+}

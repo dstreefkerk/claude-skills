@@ -1,0 +1,73 @@
+{
+  "status": "migration_complete",
+  "translation_quality": "fully_translated",
+  "kql_query": "// Migrated from Splunk: Failed logon detection\n// Original SPL: index=windows EventCode=4625\n_Im_Authentication(\n    starttime=ago(1h),\n    endtime=now(),\n    eventresult='Failure'\n)\n| summarize\n    count = count()\n    by SrcIpAddr, TargetUsername\n| where count > 5\n| extend risk_score = case(\n    count > 20, \"Critical\",\n    count > 10, \"High\",\n    count > 5, \"Medium\",\n    \"Low\"\n)\n| project\n    TimeGenerated = now(),\n    SrcIpAddr,\n    TargetUsername,\n    count,\n    risk_score\n| sort by count desc",
+  "command_mapping": {
+    "spl_to_kql": {
+      "index=windows EventCode=4625": "_Im_Authentication(eventresult='Failure')",
+      "stats count by src_ip, user": "summarize count = count() by SrcIpAddr, TargetUsername",
+      "where count > 5": "where count > 5",
+      "eval risk_score=case(...)": "extend risk_score = case(...)",
+      "table _time, src_ip, user, count, risk_score": "project TimeGenerated, SrcIpAddr, TargetUsername, count, risk_score",
+      "sort -count": "sort by count desc"
+    }
+  },
+  "schema_mapping": {
+    "splunk_cim_field": "asim_field",
+    "src_ip": "SrcIpAddr",
+    "user": "TargetUsername",
+    "_time": "TimeGenerated",
+    "EventCode": "EventResult (via ASIM normalization)"
+  },
+  "key_differences": [
+    {
+      "aspect": "Data Source",
+      "spl": "index=windows EventCode=4625 (Splunk index)",
+      "kql": "_Im_Authentication(eventresult='Failure') (ASIM parser)",
+      "note": "ASIM enables source-agnostic detection across Azure AD, Windows, Linux, etc."
+    },
+    {
+      "aspect": "Aggregation",
+      "spl": "stats count by src_ip, user",
+      "kql": "summarize count = count() by SrcIpAddr, TargetUsername",
+      "note": "KQL requires explicit assignment: count = count()"
+    },
+    {
+      "aspect": "Case Expressions",
+      "spl": "eval risk_score=case(...)",
+      "kql": "extend risk_score = case(...)",
+      "note": "KQL uses 'extend' for calculated fields"
+    },
+    {
+      "aspect": "Field Selection",
+      "spl": "table _time, src_ip, user, count, risk_score",
+      "kql": "project TimeGenerated, SrcIpAddr, TargetUsername, count, risk_score",
+      "note": "KQL uses 'project' instead of 'table'"
+    },
+    {
+      "aspect": "Sorting",
+      "spl": "sort -count (descending with minus sign)",
+      "kql": "sort by count desc (explicit 'desc' keyword)",
+      "note": "KQL requires 'by' keyword and 'desc'/'asc'"
+    }
+  ],
+  "validation_notes": [
+    "Translation is syntactically correct",
+    "ASIM normalization expands coverage to all authentication sources",
+    "Time window set to 1h (adjust based on Splunk search window)",
+    "Risk score logic preserved exactly",
+    "Recommend testing with parallel Splunk/Sentinel deployment"
+  ],
+  "manual_review_required": [
+    "Verify ASIM Authentication parser covers all required log sources",
+    "Confirm time window (1h) matches Splunk search range",
+    "Test risk score thresholds against production data",
+    "Validate field mappings (SrcIpAddr, TargetUsername) exist in all sources"
+  ],
+  "optimization_opportunities": [
+    "Add filtering parameters to ASIM parser for better performance",
+    "Consider using watchlist for high-risk IP allowlisting",
+    "Add entity mapping for analytics rule integration",
+    "Implement incremental aggregation for long time windows"
+  ]
+}

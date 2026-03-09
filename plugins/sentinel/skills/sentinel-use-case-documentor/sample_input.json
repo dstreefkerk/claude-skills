@@ -1,0 +1,55 @@
+{
+  "use_case_name": "UC-SENTINEL-BRUTEFORCE-001",
+  "platform": "Sentinel",
+  "category": "BruteForce",
+  "sequence": "001",
+  "kql_query": "SigninLogs\n| where ResultType != \"0\"\n| summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)\n| where FailedAttempts >= 10",
+  "analytics_rule_name": "Detect-BruteForce-AzureAD",
+  "severity": "High",
+  "purpose": "Detect brute force authentication attacks against Azure AD user accounts",
+  "business_context": "Credential stuffing and brute force attacks are increasing against our Azure AD tenant. Early detection is critical to prevent account compromise.",
+  "compliance_frameworks": ["NIST 800-53", "PCI-DSS"],
+  "requirements": "NIST 800-53 AC-2(12) requires monitoring of account authentication attempts. PCI-DSS Requirement 8.1.6 mandates limiting repeated access attempts.",
+  "objectives": [
+    {
+      "specific": "Detect when 10 or more failed Azure AD sign-in attempts occur from a single IP address within a 5-minute window",
+      "measurable": "Alert triggered when FailedAttempts >= 10",
+      "achievable": "SigninLogs available with <1 minute ingestion latency",
+      "relevant": "Addresses MITRE ATT&CK T1110.004 Credential Stuffing and supports zero-trust security model",
+      "time_bound": "Alert generated within 90 seconds of threshold breach"
+    }
+  ],
+  "notification": {
+    "severity": "High",
+    "channels": ["Email to SOC team", "Sentinel console alert", "Slack #security-alerts"],
+    "escalation": "Escalate to SOC Lead via PagerDuty if not acknowledged within 15 minutes"
+  },
+  "components": [
+    "Analytics Rule: Detect-BruteForce-AzureAD",
+    "Playbook: Auto-Investigate-BruteForce",
+    "Workbook: Authentication-Monitoring-Dashboard"
+  ],
+  "assumptions": [
+    "Azure AD Sign-in Logs connector is configured and ingesting data",
+    "SigninLogs table has <1 minute latency",
+    "ResultType field is populated (0 = success, non-zero = failure codes)"
+  ],
+  "limitations": [
+    "Does not detect brute force against on-premises Active Directory (only Azure AD)",
+    "VPN users with rotating IPs may generate false positives",
+    "Distributed attacks from botnet (1-2 attempts per IP) may evade detection",
+    "5-minute window means attacks completed in <5 minutes may have delayed detection"
+  ],
+  "deliverable_profile": {
+    "author": "SOC Detection Engineering Team",
+    "process_owner": "Security Operations Center",
+    "status": "Active",
+    "effective_date": "2025-01-19",
+    "policies": ["SEC-POL-001: Identity & Access Management Policy"],
+    "industry_references": [
+      "NIST 800-53 AC-2(12) Account Monitoring",
+      "MITRE ATT&CK T1110.004 Credential Stuffing",
+      "CIS Control 6: Access Control Management"
+    ]
+  }
+}
