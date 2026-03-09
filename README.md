@@ -11,7 +11,8 @@ Personal Claude Code plugins.
 | `cyber` | CISO-level impact statements |
 | `microsoft` | Stream transcript extraction & slide detection |
 | `tech-researcher` | Validated research pipeline with critique loop |
-| `productivity` | Session reflection, PowerPoint speaker notes |
+| `reflect` | Session reflection |
+| `productivity` | PowerPoint speaker notes |
 
 ## Testing Locally
 
