@@ -4,14 +4,18 @@ Personal Claude Code plugins following the [Agent Skills specification](https://
 
 ## Plugins
 
-| Plugin | Skills |
-|--------|--------|
-| `powershell` | Enterprise PowerShell coding standards |
-| `sentinel` | Codeless connectors, KQL expert, ARM generator, use case documentor |
-| `cyber` | CISO-level impact statements |
-| `tech-researcher` | Validated research pipeline with critique loop |
-| `reflect` | Session reflection |
-| `productivity` | PowerPoint speaker notes, Stream transcript extraction & slide detection |
+| Plugin | Skill | Description |
+|--------|-------|-------------|
+| `powershell` | `powershell` | Enterprise PowerShell coding standards — structure, error handling, security, performance, and output patterns |
+| `sentinel` | `codeless-connectors` | Complete CCF reference for building Sentinel REST/Push/GCP connector ARM templates, DCRs, KQL transforms, and UI definitions |
+| | `kql-expert` | KQL query optimisation, schema validation, and best-practice compliance for Sentinel and M365 Defender detection rules |
+| | `sentinel-arm-generator` | Generates deployment-ready Sentinel Analytic Rule ARM templates from KQL queries with MITRE mappings and entity extraction |
+| | `sentinel-use-case-documentor` | Documents Sentinel analytics rules as comprehensive SOC use cases from ARM templates or KQL detection queries |
+| `cyber` | `cyber-impact-statement` | CISO-level impact statements for security control failures — direct causality, business outcomes, no corporate fluff |
+| `tech-researcher` | `research` | Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop |
+| `reflect` | `reflect` | Session review — identifies mistakes, friction, and skill optimisation opportunities |
+| `productivity` | `slide-notes` | Structured speaker notes for technical presentations — runbook-style bullets with Q&A, references, timing cues, and transitions |
+| | `stream-transcript` | Extracts WebVTT transcripts and detects slide transitions from Microsoft Stream / SharePoint-hosted video recordings |
 
 ## Installation
 
