@@ -1,0 +1,8 @@
+{
+  "name": "reflect",
+  "description": "Session reflection — review mistakes, friction, and skill optimization opportunities at session end.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Daniel Streefkerk"
+  }
+}
