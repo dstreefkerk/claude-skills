@@ -1,0 +1,8 @@
+{
+  "name": "tech-researcher",
+  "description": "Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Daniel Streefkerk"
+  }
+}
