@@ -1,6 +1,6 @@
 # dstreefkerk-skills
 
-Personal Claude Code plugins.
+Personal Claude Code plugins following the [Agent Skills specification](https://agentskills.io/specification) for broad compatibility.
 
 ## Plugins
 
@@ -13,7 +13,26 @@ Personal Claude Code plugins.
 | `reflect` | Session reflection |
 | `productivity` | PowerPoint speaker notes, Stream transcript extraction & slide detection |
 
-## Testing Locally
+## Installation
+
+### Claude Code Marketplace
+
+```bash
+/plugin marketplace add dstreefkerk/claude-skills
+```
+
+Then install individual plugins:
+
+```bash
+/plugin install powershell@dstreefkerk-skills
+/plugin install sentinel@dstreefkerk-skills
+/plugin install cyber@dstreefkerk-skills
+/plugin install tech-researcher@dstreefkerk-skills
+/plugin install reflect@dstreefkerk-skills
+/plugin install productivity@dstreefkerk-skills
+```
+
+## Local Development
 
 ```bash
 claude --plugin-dir ./plugins/sentinel
