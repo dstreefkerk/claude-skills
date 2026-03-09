@@ -1,8 +1,8 @@
 {
-  "name": "jezweb-skills",
-  "description": "Workflow skills for Claude Code — each produces tangible output",
+  "name": "daniel-skills",
+  "description": "Daniel Streefkerk's personal Claude Code plugin collection.",
+  "version": "1.0.0",
   "author": {
-    "name": "Jeremy Dawes / Jezweb",
-    "email": "jeremy@jezweb.net"
+    "name": "Daniel Streefkerk"
   }
 }

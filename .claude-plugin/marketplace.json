@@ -1,65 +1,44 @@
-{
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "jezweb-skills",
-  "description": "Workflow skills for Claude Code — each produces tangible output",
-  "owner": {
-    "name": "Jeremy Dawes / Jezweb",
-    "email": "jeremy@jezweb.net"
+[
+  {
+    "name": "powershell",
+    "description": "Enterprise PowerShell coding standards and best practices.",
+    "source": "./plugins/powershell",
+    "category": "development"
   },
-  "plugins": [
-    {
-      "name": "cloudflare",
-      "description": "Scaffold Cloudflare Workers, Hono APIs, D1/Drizzle schemas, full-stack Vite+Workers apps, and TanStack Start SSR dashboards.",
-      "source": "./plugins/cloudflare",
-      "category": "development"
-    },
-    {
-      "name": "web-design",
-      "description": "Web design methodology, component patterns (heroes, cards, CTAs), and local business SEO.",
-      "source": "./plugins/web-design",
-      "category": "design"
-    },
-    {
-      "name": "frontend",
-      "description": "Tailwind v4 theming and shadcn/ui component installation, customisation, and recipes.",
-      "source": "./plugins/frontend",
-      "category": "design"
-    },
-    {
-      "name": "design-assets",
-      "description": "Generate colour palettes, favicon packages, custom SVG icon sets, AI-generated images (Gemini), and image processing (resize, convert, optimise).",
-      "source": "./plugins/design-assets",
-      "category": "design"
-    },
-    {
-      "name": "integrations",
-      "description": "Google Chat webhooks, Google Apps Script automation, ElevenLabs voice agents, and MCP server building.",
-      "source": "./plugins/integrations",
-      "category": "productivity"
-    },
-    {
-      "name": "dev-tools",
-      "description": "Project health and permission management, dev sessions, team updates with feedback triage, GitHub releases, Gemini peer review and API guide, capabilities reference, UX audits, and responsive layout testing.",
-      "source": "./plugins/dev-tools",
-      "category": "development"
-    },
-    {
-      "name": "writing",
-      "description": "Australian business English writing style for professional communications.",
-      "source": "./plugins/writing",
-      "category": "productivity"
-    },
-    {
-      "name": "shopify",
-      "description": "Manage Shopify stores: product creation, bulk imports, content pages, blog posts, and SEO metadata.",
-      "source": "./plugins/shopify",
-      "category": "productivity"
-    },
-    {
-      "name": "wordpress",
-      "description": "Manage WordPress sites: content creation, blog posts, media, Elementor page editing, and WP-CLI workflows.",
-      "source": "./plugins/wordpress",
-      "category": "productivity"
-    }
-  ]
-}
+  {
+    "name": "sentinel",
+    "description": "Microsoft Sentinel skills — Codeless Connector Framework, KQL expertise, ARM template generation, and use case documentation.",
+    "source": "./plugins/sentinel",
+    "category": "security"
+  },
+  {
+    "name": "cyber",
+    "description": "CISO-level cyber GRC impact statements for security control failures with direct causality and business outcomes.",
+    "source": "./plugins/cyber",
+    "category": "security"
+  },
+  {
+    "name": "microsoft",
+    "description": "Microsoft Stream transcript extraction and slide detection from SharePoint-hosted video recordings.",
+    "source": "./plugins/microsoft",
+    "category": "productivity"
+  },
+  {
+    "name": "tech-researcher",
+    "description": "Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop.",
+    "source": "./plugins/tech-researcher",
+    "category": "productivity"
+  },
+  {
+    "name": "reflect",
+    "description": "Session reflection — review mistakes, friction, and skill optimization opportunities at session end.",
+    "source": "./plugins/reflect",
+    "category": "productivity"
+  },
+  {
+    "name": "productivity",
+    "description": "PowerPoint speaker notes for technical presentations — runbook-style bullet notes with Q&A, references, and timing cues.",
+    "source": "./plugins/productivity",
+    "category": "productivity"
+  }
+]
