@@ -1,8 +1,0 @@
-{
-  "name": "microsoft",
-  "description": "Microsoft Stream transcript extraction and slide detection from SharePoint-hosted video recordings.",
-  "version": "1.0.0",
-  "author": {
-    "name": "Daniel Streefkerk"
-  }
-}

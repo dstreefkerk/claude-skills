@@ -9,10 +9,9 @@ Personal Claude Code plugin repo — skills, agents, and commands packaged for p
 | `powershell` | skill: `powershell` | development |
 | `sentinel` | skills: `codeless-connectors`, `kql-expert`, `sentinel-arm-generator`, `sentinel-use-case-documentor` | security |
 | `cyber` | skill: `cyber-impact-statement` | security |
-| `microsoft` | skill: `stream-transcript` | productivity |
 | `tech-researcher` | agents: `research-critic`, `deep-research-specialist`; command: `research` | productivity |
 | `reflect` | skill: `reflect` | productivity |
-| `productivity` | skill: `slide-notes` | productivity |
+| `productivity` | skills: `slide-notes`, `stream-transcript` | productivity |
 
 ## Directory Structure
 
@@ -34,9 +33,6 @@ claude-skills/
 │   ├── cyber/
 │   │   ├── .claude-plugin/plugin.json
 │   │   └── skills/cyber-impact-statement/
-│   ├── microsoft/
-│   │   ├── .claude-plugin/plugin.json
-│   │   └── skills/stream-transcript/
 │   ├── tech-researcher/
 │   │   ├── .claude-plugin/plugin.json
 │   │   ├── agents/
@@ -49,7 +45,9 @@ claude-skills/
 │   │   └── skills/reflect/
 │   └── productivity/
 │       ├── .claude-plugin/plugin.json
-│       └── skills/slide-notes/
+│       └── skills/
+│           ├── slide-notes/
+│           └── stream-transcript/
 ├── .claude-plugin/
 │   ├── marketplace.json
 │   └── plugin.json
@@ -67,7 +65,6 @@ claude \
   --plugin-dir ./plugins/powershell \
   --plugin-dir ./plugins/sentinel \
   --plugin-dir ./plugins/cyber \
-  --plugin-dir ./plugins/microsoft \
   --plugin-dir ./plugins/tech-researcher \
   --plugin-dir ./plugins/reflect \
   --plugin-dir ./plugins/productivity

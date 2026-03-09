@@ -18,12 +18,6 @@
     "category": "security"
   },
   {
-    "name": "microsoft",
-    "description": "Microsoft Stream transcript extraction and slide detection from SharePoint-hosted video recordings.",
-    "source": "./plugins/microsoft",
-    "category": "productivity"
-  },
-  {
     "name": "tech-researcher",
     "description": "Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop.",
     "source": "./plugins/tech-researcher",
@@ -37,7 +31,7 @@
   },
   {
     "name": "productivity",
-    "description": "PowerPoint speaker notes for technical presentations — runbook-style bullet notes with Q&A, references, and timing cues.",
+    "description": "Productivity skills — PowerPoint speaker notes for technical presentations, and Microsoft Stream transcript extraction with slide detection.",
     "source": "./plugins/productivity",
     "category": "productivity"
   }

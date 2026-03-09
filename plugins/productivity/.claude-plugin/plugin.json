@@ -1,6 +1,6 @@
 {
   "name": "productivity",
-  "description": "PowerPoint speaker notes for technical presentations — runbook-style bullet notes with Q&A, references, and timing cues.",
+  "description": "Productivity skills — PowerPoint speaker notes for technical presentations, and Microsoft Stream transcript extraction with slide detection.",
   "version": "1.0.0",
   "author": {
     "name": "Daniel Streefkerk"
