@@ -1,0 +1,8 @@
+{
+  "name": "cyber",
+  "description": "CISO-level cyber GRC impact statements for security control failures with direct causality and business outcomes.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Daniel Streefkerk"
+  }
+}
