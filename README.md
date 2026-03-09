@@ -1,4 +1,4 @@
-# Daniel's Claude Skills
+# dstreefkerk-skills
 
 Personal Claude Code plugins.
 
