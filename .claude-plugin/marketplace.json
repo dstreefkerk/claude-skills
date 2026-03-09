@@ -1,0 +1,65 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "jezweb-skills",
+  "description": "Workflow skills for Claude Code — each produces tangible output",
+  "owner": {
+    "name": "Jeremy Dawes / Jezweb",
+    "email": "jeremy@jezweb.net"
+  },
+  "plugins": [
+    {
+      "name": "cloudflare",
+      "description": "Scaffold Cloudflare Workers, Hono APIs, D1/Drizzle schemas, full-stack Vite+Workers apps, and TanStack Start SSR dashboards.",
+      "source": "./plugins/cloudflare",
+      "category": "development"
+    },
+    {
+      "name": "web-design",
+      "description": "Web design methodology, component patterns (heroes, cards, CTAs), and local business SEO.",
+      "source": "./plugins/web-design",
+      "category": "design"
+    },
+    {
+      "name": "frontend",
+      "description": "Tailwind v4 theming and shadcn/ui component installation, customisation, and recipes.",
+      "source": "./plugins/frontend",
+      "category": "design"
+    },
+    {
+      "name": "design-assets",
+      "description": "Generate colour palettes, favicon packages, custom SVG icon sets, AI-generated images (Gemini), and image processing (resize, convert, optimise).",
+      "source": "./plugins/design-assets",
+      "category": "design"
+    },
+    {
+      "name": "integrations",
+      "description": "Google Chat webhooks, Google Apps Script automation, ElevenLabs voice agents, and MCP server building.",
+      "source": "./plugins/integrations",
+      "category": "productivity"
+    },
+    {
+      "name": "dev-tools",
+      "description": "Project health and permission management, dev sessions, team updates with feedback triage, GitHub releases, Gemini peer review and API guide, capabilities reference, UX audits, and responsive layout testing.",
+      "source": "./plugins/dev-tools",
+      "category": "development"
+    },
+    {
+      "name": "writing",
+      "description": "Australian business English writing style for professional communications.",
+      "source": "./plugins/writing",
+      "category": "productivity"
+    },
+    {
+      "name": "shopify",
+      "description": "Manage Shopify stores: product creation, bulk imports, content pages, blog posts, and SEO metadata.",
+      "source": "./plugins/shopify",
+      "category": "productivity"
+    },
+    {
+      "name": "wordpress",
+      "description": "Manage WordPress sites: content creation, blog posts, media, Elementor page editing, and WP-CLI workflows.",
+      "source": "./plugins/wordpress",
+      "category": "productivity"
+    }
+  ]
+}
