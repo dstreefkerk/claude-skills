@@ -1,6 +1,6 @@
 ---
 name: codeless-connectors
-description: "Use BEFORE writing any Microsoft Sentinel connector ARM template, DCR, KQL transform, or createUiDefinition.json. Provides the complete CCF (Codeless Connector Framework) reference for RestApiPoller, Push, and GCP connector types  -- including escaping rules, authentication, pagination, UI definitions, and deployment gotchas. Also use when debugging connector deployment failures or reviewing existing CCP templates."
+description: Use before writing any Microsoft Sentinel connector ARM template, DCR, KQL transform, or createUiDefinition.json. Provides the complete CCF (Codeless Connector Framework) reference for RestApiPoller, Push, and GCP connector types — including escaping rules, authentication, pagination, UI definitions, and deployment gotchas. Also use when debugging connector deployment failures or reviewing existing CCP templates.
 ---
 
 # Microsoft Sentinel Codeless Connector Framework (CCF) Expert

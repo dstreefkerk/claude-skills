@@ -1,6 +1,6 @@
 ---
 name: kql-expert
-description: MUST BE USED PROACTIVELY when user reads/checks/reviews/analyzes any .kql file, writes KQL queries, or works with Microsoft Sentinel/M365 Defender detection rules. Invoke IMMEDIATELY when .kql file extension detected. Expert in query optimization, schema validation, and best practice compliance.
+description: KQL expert for Microsoft Sentinel, Azure Monitor, and M365 Defender. Use proactively when the user works with any .kql file, writes or reviews KQL queries, develops analytics or detection rules, performs threat hunting, needs DCR transformation KQL, or asks to optimise, validate, or convert a KQL query. Covers query optimisation, schema validation, ASIM normalisation, SPL migration, and best practices.
 ---
 
 # KQL Expert - Microsoft Sentinel & Azure Monitor Query Specialist
@@ -37,6 +37,7 @@ Expert guidance for Kusto Query Language (KQL) covering query optimization, sche
 | **Syntax problems** | KQL validation fails, syntax errors |
 | **Best practice review** | "Review for best practices", "Is this optimized?" |
 | **SPL migration** | "Convert this Splunk query to KQL" |
+| **DCR transformations** | "DCR transformation", "data collection rule KQL", "transform incoming logs", "filter before ingestion" |
 
 ### File Patterns
 - `*.kql` - **Always invoke for this extension**
@@ -75,6 +76,27 @@ When reviewing or optimizing KQL:
 8. **Compare Results**: Document performance improvements
 9. **Validate Assumptions**: Verify theoretical expectations match reality
 10. **Recommend Implementation**: Provide final optimized query with rationale
+
+## DCR Transformation KQL
+
+KQL used in **Data Collection Rule (DCR) transformations** has significant restrictions compared to standard Log Analytics KQL. When the user is working on DCR transformations, **always read `references/dcr_transformation_kql.md`** for the authoritative limitations before writing or reviewing any transformation query.
+
+### Key DCR Restrictions (Summary)
+
+- Transformations apply per-record — only single-row-in / single-row-out operators are supported
+- Input stream is referenced as `source` (not a table name)
+- **Supported tabular operators only**: `where`, `extend`, `project`, `project-away`, `project-rename`, `parse`, `print`, `datatable`, `columnifexists`
+- **Unsupported**: `summarize`, `join`, `union`, `top`
+- **`coalesce()` is not supported** — use `iif(isnotnull(...), ..., ...)` instead
+- **`bag_remove_keys()` is not supported** — reconstruct the bag with `pack()`
+- **`columnifexists`** (no underscore) — not `column_ifexists`
+- **`base64_encodestring`** / **`base64_decodestring`** — not the `_tostring` variants
+- `parse` operator: max 10 column extractions per statement
+- DCR-only functions: `parse_cef_dictionary`, `geo_location`
+- Use `parse_json()` for dynamic literals, not `dynamic()` syntax
+- `TimeGenerated` must be included in output for most standard tables
+
+For the complete supported functions allowlist and worked examples, read `references/dcr_transformation_kql.md`.
 
 ## Scripts
 
@@ -134,6 +156,7 @@ Located in `references/` folder:
 | `kql_best_practices.md` | Detailed optimization guide | Read directly |
 | `spl_to_kql_mapping.md` | SPL migration reference | Read directly |
 | `asim_schemas.md` | ASIM parser reference | Read directly |
+| `dcr_transformation_kql.md` | DCR transformation KQL limitations, supported operators/functions, and best practices | Read directly |
 
 **Important**: Never read `environments.json` directly. It's a large data file (~500KB+) designed for programmatic access via `schema_validator.py`. Use the Python script to validate schemas.
 
@@ -435,6 +458,7 @@ This skill supports detection across all MITRE tactics:
 
 | Version | Changes |
 |---------|---------|
+| 2.3.0 | Added DCR Transformation KQL section and `dcr_transformation_kql.md` reference covering supported operators, function allowlist, and DCR-specific restrictions |
 | 2.2.3 | Added Robust String Parsing section warning about fragile `parse` operator; recommend `extract()` or `parse_json()` |
 | 2.2.2 | Enhanced proactive triggers with specific user phrasing patterns and explicit .kql file extension detection |
 | 2.2.1 | Clarified environments.json should only be accessed via schema_validator.py, not read directly |
@@ -445,5 +469,5 @@ This skill supports detection across all MITRE tactics:
 
 ---
 
-**Version**: 2.2.3
-**Last Updated**: January 2026
+**Version**: 2.3.0
+**Last Updated**: March 2026

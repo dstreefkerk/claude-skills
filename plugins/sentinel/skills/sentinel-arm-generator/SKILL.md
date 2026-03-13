@@ -1,8 +1,6 @@
 ---
 name: sentinel-arm-generator
-description: Automatically generates deployment-ready Microsoft Sentinel Analytic Rule ARM templates from KQL queries with intelligent MITRE mappings, entity extraction, and metadata generation
-metadata:
-  version: "1.0"
+description: Generates deployment-ready Microsoft Sentinel Analytic Rule ARM templates from KQL detection queries. Use when the user asks to create, export, or package a Sentinel analytics rule, convert a KQL query into an ARM template, or generate rule deployment files with MITRE ATT&CK mappings and entity extraction.
 ---
 
 # Microsoft Sentinel ARM Template Generator

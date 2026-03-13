@@ -1,6 +1,6 @@
 ---
 name: cyber-impact-statement
-description: Generate concise, CISO-level impact statements for security control failures with direct causality and business outcomes
+description: Generates concise, CISO-level impact statements for security control failures. Use when the user asks for an impact statement, wants to explain the business consequences of a security control failure, needs to document risk for a risk register or audit finding, or wants to translate a technical vulnerability into executive language for a CISO or board.
 ---
 
 # Cyber Impact Statement Generator

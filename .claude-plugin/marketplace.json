@@ -1,38 +1,44 @@
-[
-  {
-    "name": "powershell",
-    "description": "Enterprise PowerShell coding standards and best practices.",
-    "source": "./plugins/powershell",
-    "category": "development"
+{
+  "name": "dstreefkerk-skills",
+  "owner": {
+    "name": "Daniel Streefkerk"
   },
-  {
-    "name": "sentinel",
-    "description": "Microsoft Sentinel skills — Codeless Connector Framework, KQL expertise, ARM template generation, and use case documentation.",
-    "source": "./plugins/sentinel",
-    "category": "security"
-  },
-  {
-    "name": "cyber",
-    "description": "CISO-level cyber GRC impact statements for security control failures with direct causality and business outcomes.",
-    "source": "./plugins/cyber",
-    "category": "security"
-  },
-  {
-    "name": "tech-researcher",
-    "description": "Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop.",
-    "source": "./plugins/tech-researcher",
-    "category": "productivity"
-  },
-  {
-    "name": "reflect",
-    "description": "Session reflection — review mistakes, friction, and skill optimization opportunities at session end.",
-    "source": "./plugins/reflect",
-    "category": "productivity"
-  },
-  {
-    "name": "productivity",
-    "description": "Productivity skills — PowerPoint speaker notes for technical presentations, and Microsoft Stream transcript extraction with slide detection.",
-    "source": "./plugins/productivity",
-    "category": "productivity"
-  }
-]
+  "plugins": [
+    {
+      "name": "powershell",
+      "description": "Enterprise PowerShell coding standards and best practices.",
+      "source": "./plugins/powershell",
+      "category": "development"
+    },
+    {
+      "name": "sentinel",
+      "description": "Microsoft Sentinel skills — Codeless Connector Framework, KQL expertise, ARM template generation, and use case documentation.",
+      "source": "./plugins/sentinel",
+      "category": "security"
+    },
+    {
+      "name": "cyber",
+      "description": "CISO-level cyber GRC impact statements for security control failures with direct causality and business outcomes.",
+      "source": "./plugins/cyber",
+      "category": "security"
+    },
+    {
+      "name": "tech-researcher",
+      "description": "Validated technical research pipeline with parallel data gathering, quality-gated critique (8/10 threshold), and automatic revision loop.",
+      "source": "./plugins/tech-researcher",
+      "category": "productivity"
+    },
+    {
+      "name": "reflect",
+      "description": "Session reflection — review mistakes, friction, and skill optimization opportunities at session end.",
+      "source": "./plugins/reflect",
+      "category": "productivity"
+    },
+    {
+      "name": "productivity",
+      "description": "Productivity skills — PowerPoint speaker notes for technical presentations, and Microsoft Stream transcript extraction with slide detection.",
+      "source": "./plugins/productivity",
+      "category": "productivity"
+    }
+  ]
+}

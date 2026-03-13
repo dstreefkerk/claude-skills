@@ -1,8 +1,6 @@
 ---
 name: sentinel-use-case-documentor
 description: Documents Microsoft Sentinel analytics rules as comprehensive SOC use cases. Use when the user wants to document a Sentinel rule, create SOC documentation, generate use case docs from an ARM template, or document a KQL detection query.
-metadata:
-  version: "1.0"
 ---
 
 # Sentinel Use Case Documentor
