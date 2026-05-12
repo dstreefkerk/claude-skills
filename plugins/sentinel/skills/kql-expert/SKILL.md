@@ -221,6 +221,7 @@ SigninLogs
 | `sort by \| take N` | Full sort | Use `top N by` |
 | Large table on left | Inefficient join | Small table left |
 | `parse` for structured strings | Fragile; breaks if schema changes | Use `extract()` or `parse_json()` |
+| PCRE lookarounds / backrefs in regex | KQL uses RE2; `(?=`, `(?!`, `(?<=`, `(?<!`, `\1` fail with `SEM0420` | Use negated character classes (`[^\[]+`) and `where not(...)` |
 
 ### Contains Elimination Patterns
 
@@ -256,6 +257,37 @@ The `parse` operator is sensitive to exact string formats and breaks silently wh
 | `parse` | Format is guaranteed stable AND you need all fields in sequence |
 | `extract()` | Need specific fields, format may vary, or fields may be reordered |
 | `parse_json()` | Data is JSON (extract JSON portion first if prefixed with text) |
+
+### Regex Engine Limitations (RE2)
+
+`extract()`, `extract_all()`, `matches regex`, and `parse_regex` all run on Google's **RE2** engine, not PCRE. Unsupported constructs:
+
+| Construct | Example | Status |
+|---|---|---|
+| Lookahead | `(?=foo)`, `(?!foo)` | Not supported |
+| Lookbehind | `(?<=foo)`, `(?<!foo)` | Not supported |
+| Backreferences | `\1`, `\2` inside the pattern | Not supported |
+| Non-capturing group | `(?:foo)` | **Supported** (don't confuse with lookarounds) |
+
+**Failure mode for analytic rules:** a PCRE-style pattern usually deploys fine via ARM PUT (ARM doesn't pre-validate KQL semantics), but the Sentinel UI raises `Relop semantic error: SEM0420: Regex pattern is ill-formed` when the rule is opened, and scheduled execution fails silently — **no incidents fire**. Always validate regex grammar before deploy.
+
+**Common rewrites:**
+
+```kql
+// FAILS - lookahead asserting end-of-line or '['
+| extend Reason = extract(@"ERROR[:\s]+(.+?)(?=\s*$|\s*\[)", 1, msg)
+
+// WORKS - negated character class + trim
+| extend Reason = trim(@"\s+$", extract(@"ERROR[:\s]+([^\[]+)", 1, msg))
+
+// FAILS - lookbehind for "not preceded by X"
+| where Field matches regex @"(?<!Authorised)Login"
+
+// WORKS - invert the test in KQL
+| where Field matches regex @"Login" and not(Field has "AuthorisedLogin")
+```
+
+Verify regex grammar in a Kusto/Azure Data Explorer playground (RE2) — **not** in regex101 (PCRE).
 
 ## Resource Thresholds
 
@@ -458,6 +490,7 @@ This skill supports detection across all MITRE tactics:
 
 | Version | Changes |
 |---------|---------|
+| 2.3.1 | Added Regex Engine Limitations (RE2) section and anti-pattern row covering PCRE lookarounds/backreferences that fail with `SEM0420` at rule-save |
 | 2.3.0 | Added DCR Transformation KQL section and `dcr_transformation_kql.md` reference covering supported operators, function allowlist, and DCR-specific restrictions |
 | 2.2.3 | Added Robust String Parsing section warning about fragile `parse` operator; recommend `extract()` or `parse_json()` |
 | 2.2.2 | Enhanced proactive triggers with specific user phrasing patterns and explicit .kql file extension detection |
@@ -469,5 +502,5 @@ This skill supports detection across all MITRE tactics:
 
 ---
 
-**Version**: 2.3.0
-**Last Updated**: March 2026
+**Version**: 2.3.1
+**Last Updated**: May 2026
