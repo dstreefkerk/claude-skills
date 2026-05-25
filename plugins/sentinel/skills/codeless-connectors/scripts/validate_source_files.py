@@ -1029,6 +1029,49 @@ def cross_file_checks(by_kind: dict[str, list[tuple[Path, Union[dict, list]]]]) 
                     file_label=f"{polling_label} <-> {cd_entry[0].name}",
                 ))
 
+    # 5. DCR dataFlows[].outputStream Custom-...._CL must reference a real
+    #    table. This is a sharper signal than the existing dataType check —
+    #    the dataType check tells you a logical identifier is wrong; this
+    #    one tells you the DCR is going to fail at deploy time because
+    #    a routed stream has no destination table. Microsoft- prefixed
+    #    outputStreams are ASIM/Microsoft-managed tables and are skipped.
+    if dcr_entry and table_entries:
+        table_names = set()
+        for _, tcontent in table_entries:
+            for t in _dict_elements(tcontent):
+                tn = t.get("name") or (t.get("properties", {}) or {}).get("schema", {}).get("name")
+                if tn:
+                    table_names.add(tn)
+        dcr_elements = _dict_elements(dcr_entry[1])
+        multi_dcr = len(dcr_elements) > 1
+        for dcr_idx, dcr_elem in enumerate(dcr_elements):
+            props = dcr_elem.get("properties", {}) or {}
+            for flow_idx, flow in enumerate(props.get("dataFlows", []) or []):
+                out = flow.get("outputStream", "")
+                if not out:
+                    continue
+                if out.startswith("Microsoft-"):
+                    # ASIM / Microsoft-managed table — not locally validatable
+                    continue
+                if not (out.startswith("Custom-") and out.endswith("_CL")):
+                    # The Custom-/Microsoft- prefix check in check_dcr_domain
+                    # catches the wholly-malformed cases. We only enforce
+                    # table-existence for the Custom-*_CL shape.
+                    continue
+                bare = out[len("Custom-"):]
+                if bare not in table_names:
+                    dcr_suffix = f" (DCR element {dcr_idx})" if multi_dcr else ""
+                    results.append(CheckResult(
+                        "Custom outputStream references a known table",
+                        False,
+                        f"dataFlows[{flow_idx}].outputStream {out!r}{dcr_suffix} "
+                        f"expects a table named {bare!r}, but no table file "
+                        f"declares that name (have: {sorted(table_names)}). "
+                        f"Either rename the table or fix the outputStream.",
+                        file_label=f"{dcr_label} <-> tables",
+                        property_path=f"properties.dataFlows[{flow_idx}].outputStream",
+                    ))
+
     return results
 
 
