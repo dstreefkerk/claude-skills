@@ -44,3 +44,6 @@ SESSION.md
 
 # Packaged skills
 *.skill
+
+# ARM-TTK local clone (auto-installed)
+.arm-ttk/
