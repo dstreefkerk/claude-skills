@@ -109,7 +109,7 @@ come from pagination, not baseline polling).
 | **httpMethod** | No | string | `GET` | `GET` or `POST` |
 | **queryWindowInMin** | No | integer/string | 5 | Poll interval AND time window (min). Minimum: 1. Can be a dynamic ARM expression for user-configurable intervals (see examples). |
 | **isActive** | No | boolean | — | Explicitly enable/disable the connector. Production example: `"isActive": true` (Workday). |
-| **rateLimitQPS** | No | integer | — | Max queries per second. Note: both `rateLimitQPS` and `rateLimitQps` are accepted (casing varies across production connectors). |
+| **rateLimitQPS** | No | integer | — | Max queries per second. The schema's canonical casing is `rateLimitQPS` (capital QPS). |
 | **rateLimitConfig** | No | object | — | Advanced rate limit config using response headers |
 | **retryCount** | No | integer (1-6) | 3 | Retries on failure |
 | **timeoutInSeconds** | No | integer (1-180) | 20 | Request timeout |
@@ -118,11 +118,11 @@ come from pagination, not baseline polling).
 | **logResponseContent** | No | boolean | false | Diagnostic flag — when true, full response bodies are logged to Sentinel Health diagnostics for debugging. Leave `false` (or omit) for production; the logged content includes raw event data and may contain PII or credentials. |
 | **headers** | No | object | — | Request headers. Many production connectors set `"User-Agent": "Scuba"` — this identifies traffic to the CCF infrastructure (see Scuba service tag in troubleshooting). |
 | **queryParameters** | No | object | — | Query parameters |
-| **startTimeAttributeName** | No | string | — | Query param for start time. Can be used alone (without endTime) — the API will receive only a start-time filter. |
-| **endTimeAttributeName** | No | string | — | Query param for end time. Can be used alone or paired with startTime. |
-| **queryTimeIntervalAttributeName** | No | string | — | Combined time interval param |
-| **queryTimeIntervalPrepend** | Cond. | string | — | Prepend text for time interval (required if above set) |
-| **queryTimeIntervalDelimiter** | Cond. | string | — | Delimiter between start/end (required if above set) |
+| **StartTimeAttributeName** | No | string | — | Query param for start time. Can be used alone (without endTime) — the API will receive only a start-time filter. |
+| **EndTimeAttributeName** | No | string | — | Query param for end time. Can be used alone or paired with startTime. |
+| **QueryTimeIntervalAttributeName** | No | string | — | Combined time interval param |
+| **QueryTimeIntervalPrepend** | Cond. | string | — | Prepend text for time interval (required if above set) |
+| **QueryTimeIntervalDelimiter** | Cond. | string | — | Delimiter between start/end (required if above set) |
 | **queryParametersTemplate** | No | string | — | Template for complex parameter scenarios |
 
 ## Built-in Variables
@@ -145,8 +145,8 @@ come from pagination, not baseline polling).
     "httpMethod": "GET",
     "queryTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
     "queryWindowInMin": 5,
-    "startTimeAttributeName": "since",
-    "endTimeAttributeName": "until",
+    "StartTimeAttributeName": "since",
+    "EndTimeAttributeName": "until",
     "retryCount": 3,
     "rateLimitQPS": 10,
     "timeoutInSeconds": 60,
@@ -159,9 +159,9 @@ Produces: `https://api.example.com/events?since={start}&until={end}`
 ```json
 "request": {
     "apiEndpoint": "https://api.example.com/events",
-    "queryTimeIntervalAttributeName": "filter",
-    "queryTimeIntervalPrepend": "timestamp gt ",
-    "queryTimeIntervalDelimiter": " and timestamp lt "
+    "QueryTimeIntervalAttributeName": "filter",
+    "QueryTimeIntervalPrepend": "timestamp gt ",
+    "QueryTimeIntervalDelimiter": " and timestamp lt "
 }
 ```
 Produces: `?filter=timestamp gt {start} and timestamp lt {end}`
@@ -201,7 +201,7 @@ This lets users select their polling interval via a UI dropdown rather than hard
 "request": {
     "apiEndpoint": "https://api.box.com/2.0/events",
     "queryTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
-    "startTimeAttributeName": "created_after",
+    "StartTimeAttributeName": "created_after",
     "queryWindowInMin": 5
 }
 ```
@@ -393,7 +393,7 @@ The KQL in `stepPlaceholdersParsingKql` extracts named fields. Those field names
             "httpMethod": "GET"
         },
         "response": { "eventsJsonPaths": ["$.data.cases"], "format": "json" },
-        "paging": { "pagingType": "Offset", "PageSize": 50, "PageSizeParameterName": "limit", "OffsetParaName": "offset" },
+        "paging": { "pagingType": "Offset", "pageSize": 50, "pageSizeParameterName": "limit", "offsetParaName": "offset" },
 
         // Step 1: Enable nested enrichment
         "shouldJoinNestedData": true,

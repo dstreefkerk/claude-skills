@@ -106,8 +106,8 @@ Gather from the user:
 | `queryWindowInMin` | No | Poll interval in minutes (default: 5) |
 | `rateLimitQPS` | No | Max queries/second to respect API limits |
 | `queryTimeFormat` | No | Date format for time parameters (default: ISO 8601 UTC) |
-| `startTimeAttributeName` | No | Query param name for window start time |
-| `endTimeAttributeName` | No | Query param name for window end time |
+| `StartTimeAttributeName` | No | Query param name for window start time |
+| `EndTimeAttributeName` | No | Query param name for window end time |
 | `retryCount` | No | Retries on failure, 1-6 (default: 3) |
 | `timeoutInSeconds` | No | Request timeout, 1-180 (default: 20) |
 | `queryParameters` | No | Static query params for ongoing polling |
@@ -192,7 +192,7 @@ See `reference/authentication-types.md` for full property details and examples.
 - `TokenEndpoint` — token exchange URL
 - `Scope` — required scopes
 - For authorization_code: `AuthorizationEndpoint`, `RedirectUri`
-- `IsClientSecretInHeader` — send credentials in header vs body
+- `IsCredentialsInHeaders` — send credentials in header vs body
 - `TokenEndpointQueryParameters` — custom params for token request
 - `AuthorizationEndpointQueryParameters` — custom params for auth request
 
@@ -277,8 +277,8 @@ Build the `instructionSteps` array. Common patterns by auth type:
 ```json
 [
     {"type": "OAuthForm", "parameters": {
-        "UsernameLabel": "Client ID",
-        "PasswordLabel": "Client Secret",
+        "clientIdLabel": "Client ID",
+        "clientSecretLabel": "Client Secret",
         "connectButtonLabel": "Connect",
         "disconnectButtonLabel": "Disconnect"
     }}

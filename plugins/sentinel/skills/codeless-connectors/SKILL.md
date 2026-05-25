@@ -196,8 +196,8 @@ key+secret). See `references/authentication-types.md` for all eight.
 | `retryCount` | Retries on failure (1-6) | 3 |
 | `timeoutInSeconds` | Request timeout (1-180) | 20 |
 | `queryTimeFormat` | Date format for time params | ISO 8601 UTC |
-| `startTimeAttributeName` | Query param for start time |  -- |
-| `endTimeAttributeName` | Query param for end time |  -- |
+| `StartTimeAttributeName` | Query param for start time |  -- |
+| `EndTimeAttributeName` | Query param for end time |  -- |
 | `isPostPayloadJson` | POST body as JSON | false |
 
 Built-in variables for `queryParameters`: `{_QueryWindowStartTime}`, `{_QueryWindowEndTime}`

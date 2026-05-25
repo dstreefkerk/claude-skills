@@ -28,13 +28,6 @@ Based on RFC 5988. API returns page links in `Link` header or response body.
 }
 ```
 ```json
-// Cisco Meraki — follow the "next" link in the HTTP Link header
-"paging": {
-    "pagingType": "LinkHeader",
-    "linkHeaderRelLinkName": "rel=next"
-}
-```
-```json
 "paging": {
     "pagingType": "PersistentLinkHeader",
     "pageSizeParameterName": "limit",
@@ -44,12 +37,11 @@ Based on RFC 5988. API returns page links in `Link` header or response body.
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| LinkHeaderTokenJsonPath | No | string | JSONPath to next-page link in response body |
-| LinkHeaderRelLinkName | No | string | Which `rel` link to follow from the HTTP `Link` header. E.g., `"rel=next"` or `"rel=prev"`. Use `rel=prev` when the API returns data in reverse chronological order. |
-| PageSize | No | integer | Events per page |
-| PageSizeParameterName | No | string | Query param name for page size |
-| PagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
-| PagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
+| linkHeaderTokenJsonPath | No | string | JSONPath to next-page link in response body |
+| pageSize | No | integer | Events per page |
+| pageSizeParameterName | No | string | Query param name for page size |
+| pagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
+| pagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
 
 ## NextPageUrl
 
@@ -67,16 +59,16 @@ API returns a complex next-page URL in the response body.
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| PageSize | No | integer | Events per page |
-| PageSizeParameterName | No | string | Query param for page size |
-| NextPageUrl | No | string | Base URL (for Coralogix API) |
-| NextPageUrlQueryParameters | No | object | Custom query params for next-page requests |
-| NextPageParaName | No | string | Next-page parameter name in request |
-| HasNextFlagJsonPath | No | string | JSONPath to hasNextPage flag |
-| NextPageRequestHeader | No | string | Next-page header name |
-| NextPageUrlQueryParametersTemplate | No | string | Template for next-page params (Coralogix) |
-| PagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
-| PagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
+| pageSize | No | integer | Events per page |
+| pageSizeParameterName | No | string | Query param for page size |
+| nextPageUrl | No | string | Base URL (for Coralogix API) |
+| nextPageUrlQueryParameters | No | object | Custom query params for next-page requests |
+| NextPageParaName | No | string | Next-page parameter name in request (Pascal-cased in schema) |
+| hasNextFlagJsonPath | No | string | JSONPath to hasNextPage flag |
+| nextPageRequestHeader | No | string | Next-page header name |
+| nextPageUrlQueryParametersTemplate | No | string | Template for next-page params (Coralogix) |
+| pagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
+| pagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
 
 ## NextPageToken / PersistentToken
 
@@ -101,15 +93,15 @@ Uses a token (hash or cursor) representing current page state.
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| PageSize | No | integer | Events per page |
-| PageSizeParameterName | No | string | Query param for page size |
-| NextPageTokenJsonPath | No | string | JSONPath to next-page token in body |
-| NextPageTokenResponseHeader | No | string | Header containing token (if not in body) |
-| NextPageParaName | No | string | Next-page parameter name in request |
-| HasNextFlagJsonPath | No | string | JSONPath to hasNextPage flag |
-| NextPageRequestHeader | No | string | Header name for next-page token in request |
-| PagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
-| PagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
+| pageSize | No | integer | Events per page |
+| pageSizeParameterName | No | string | Query param for page size |
+| nextPageTokenJsonPath | No | string | JSONPath to next-page token in body |
+| nextPageTokenResponseHeader | No | string | Header containing token (if not in body) |
+| NextPageParaName | No | string | Next-page parameter name in request (Pascal-cased in schema) |
+| hasNextFlagJsonPath | No | string | JSONPath to hasNextPage flag |
+| nextPageRequestHeader | No | string | Header name for next-page token in request |
+| pagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
+| pagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
 
 ## Offset
 
@@ -127,11 +119,11 @@ Skip N records, retrieve next batch.
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| PageSize | No | integer | Events per page |
-| PageSizeParameterName | No | string | Query param for page size |
-| OffsetParaName | No | string | Query param for offset value (CCF calculates: all_events + 1) |
-| PagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
-| PagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
+| pageSize | No | integer | Events per page |
+| pageSizeParameterName | No | string | Query param for page size |
+| offsetParaName | No | string | Query param for offset value (CCF calculates: all_events + 1) |
+| pagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
+| pagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
 
 ## CountBasedPaging
 
@@ -153,14 +145,14 @@ Specify number of items to return per page using a page number parameter.
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
 | pageNumberParaName | Yes | string | Parameter name for page number |
-| PageSize | No | integer | Events per page |
-| ZeroBasedIndexing | No | boolean | Is page numbering 0-based? |
-| HasNextFlagJsonPath | No | string | JSONPath to hasMorePages flag |
-| TotalResultsJsonPath | No | string | JSONPath to total result count |
-| PageNumberJsonPath | No | string | JSONPath to current page number (required if TotalResultsJsonPath set) |
-| PageCountJsonPath | No | string | JSONPath to total page count (required if TotalResultsJsonPath set) |
-| PagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
-| PagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
+| pageSize | No | integer | Events per page |
+| zeroBasedIndexing | No | boolean | Is page numbering 0-based? |
+| hasNextFlagJsonPath | No | string | JSONPath to hasMorePages flag |
+| totalResultsJsonPath | No | string | JSONPath to total result count |
+| pageNumberJsonPath | No | string | JSONPath to current page number (required if totalResultsJsonPath set) |
+| pageCountJsonPath | No | string | JSONPath to total page count (required if totalResultsJsonPath set) |
+| pagingInfoPlacement | No | string | `QueryString` or `RequestBody` |
+| pagingQueryParamOnly | No | boolean | If true, omit all non-paging query params |
 
 ## Rate Limit Mitigation for Pagination Bursts
 

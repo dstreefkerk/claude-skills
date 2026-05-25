@@ -38,9 +38,9 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
                 "queryParameters": { "perPage": 1000 },
                 "queryWindowInMin": 5,
                 "queryTimeFormat": "UnixTimestamp",
-                "startTimeAttributeName": "t0",
-                "endTimeAttributeName": "t1",
-                "rateLimitQps": 2,
+                "StartTimeAttributeName": "t0",
+                "EndTimeAttributeName": "t1",
+                "rateLimitQPS": 2,
                 "retryCount": 3,
                 "timeoutInSeconds": 60,
                 "headers": {
@@ -77,9 +77,9 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
                 "queryParameters": { "perPage": 1000 },
                 "queryWindowInMin": 5,
                 "queryTimeFormat": "UnixTimestamp",
-                "startTimeAttributeName": "t0",
-                "endTimeAttributeName": "t1",
-                "rateLimitQps": 2,
+                "StartTimeAttributeName": "t0",
+                "EndTimeAttributeName": "t1",
+                "rateLimitQPS": 2,
                 "retryCount": 3,
                 "timeoutInSeconds": 60,
                 "headers": {
@@ -116,9 +116,9 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
                 "queryParameters": { "perPage": 1000 },
                 "queryWindowInMin": 5,
                 "queryTimeFormat": "UnixTimestamp",
-                "startTimeAttributeName": "t0",
-                "endTimeAttributeName": "t1",
-                "rateLimitQps": 2,
+                "StartTimeAttributeName": "t0",
+                "EndTimeAttributeName": "t1",
+                "rateLimitQPS": 2,
                 "retryCount": 3,
                 "timeoutInSeconds": 60,
                 "headers": {
@@ -312,7 +312,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
             "httpMethod": "Post",
             "queryWindowInMin": 5,
             "queryTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
-            "rateLimitQps": 1,
+            "rateLimitQPS": 1,
             "retryCount": 3,
             "timeoutInSeconds": 60,
             "headers": { "Content-Type": "application/json" },
@@ -325,7 +325,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
         },
         "paging": {
             "pagingType": "NextPageToken",
-            "nextPageParaName": "cursor",
+            "NextPageParaName": "cursor",
             "nextPageTokenJsonPath": "$.cursor",
             "hasNextFlagJsonPath": "$.has_more"                       // <-- stops paging when false
         }
@@ -389,12 +389,12 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
             "dataCollectionEndpoint": "{{dataCollectionEndpoint}}",
             "dataCollectionRuleImmutableId": "{{dataCollectionRuleImmutableId}}"
         },
-        "Paging": {
+        "paging": {
             "pagingType": "PersistentToken",
-            "nextPageParaName": "from",                                               // <-- query param for cursor
+            "NextPageParaName": "from",                                               // <-- query param for cursor
             "nextPageTokenJsonPath": "$.[-1:].log_id",                                // <-- last item's log_id
-            "PageSizeParameterName": "take",
-            "PageSize": 100
+            "pageSizeParameterName": "take",
+            "pageSize": 100
         }
     }
 }
@@ -406,7 +406,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
 
 **Source:** `Solutions/AzureDevOpsAuditing/Data Connectors/AzureDevOpsAuditLogs_CCP/`
 
-**Why notable:** OAuth2 `authorization_code` flow (user-interactive auth). Shows `redirectUri`, `scope`, `AuthorizationCode`, `AuthorizationEndpoint` fields. Uses both `startTimeAttributeName`/`endTimeAttributeName` AND explicit `queryParameters` with built-in variables.
+**Why notable:** OAuth2 `authorization_code` flow (user-interactive auth). Shows `RedirectUri`, `Scope`, `AuthorizationCode`, `AuthorizationEndpoint` fields. Uses both `StartTimeAttributeName`/`EndTimeAttributeName` AND explicit `queryParameters` with built-in variables.
 
 ### PollingConfig
 
@@ -428,8 +428,8 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
             "ClientId": "[[parameters('ClientId')]",
             "GrantType": "authorization_code",
             "AuthorizationCode": "[[parameters('AuthorizationCode')]",
-            "redirectUri": "{{redirectUri}}",
-            "scope": "499b84ac-1321-427f-aa17-267ca6975798/.default openid offline_access",
+            "RedirectUri": "{{redirectUri}}",
+            "Scope": "499b84ac-1321-427f-aa17-267ca6975798/.default openid offline_access",
             "TokenEndpoint": "[[parameters('tokenEndpoint')]",
             "AuthorizationEndpoint": "[[parameters('authorizationEndpoint')]",
             "TokenEndpointHeaders": {
@@ -441,7 +441,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
             "httpMethod": "GET",
             "queryWindowInMin": 5,
             "queryTimeFormat": "yyyy-MM-ddTHH:mm:ss.000000+00:00",      // <-- custom time format
-            "rateLimitQps": 1,
+            "rateLimitQPS": 1,
             "retryCount": 3,
             "timeoutInSeconds": 60,
             "StartTimeAttributeName": "startTime",
@@ -458,7 +458,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
         "paging": {
             "pagingType": "NextPageToken",
             "nextPageTokenJsonPath": "$.continuationToken",
-            "nextPageParaName": "continuationToken",
+            "NextPageParaName": "continuationToken",
             "hasNextFlagJsonPath": "$.hasMore"
         }
     }
@@ -471,7 +471,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
 
 **Source:** `Solutions/Box/Data Connectors/BoxEvents_ccp/`
 
-**Why notable:** OAuth2 `client_credentials` with `tokenEndpointQueryParameters` for Box-specific `box_subject_type` and `box_subject_id`. Uses `startTimeAttributeName` without `endTimeAttributeName` (only a "since" filter). Note `rateLimitQPS` casing (capital S).
+**Why notable:** OAuth2 `client_credentials` with `TokenEndpointQueryParameters` for Box-specific `box_subject_type` and `box_subject_id`. Uses `StartTimeAttributeName` without `EndTimeAttributeName` (only a "since" filter). Note `rateLimitQPS` casing (capital QPS).
 
 ### PollingConfig
 
@@ -484,14 +484,14 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
         "dataType": "BoxEventsV2_CL",
         "auth": {
             "type": "OAuth2",
-            "clientSecret": "{{clientSecret}}",
-            "clientId": "{{clientId}}",
-            "grantType": "client_credentials",
+            "ClientSecret": "{{clientSecret}}",
+            "ClientId": "{{clientId}}",
+            "GrantType": "client_credentials",
             "TokenEndpoint": "https://api.box.com/oauth2/token",
             "TokenEndpointHeaders": {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
-            "tokenEndpointQueryParameters": {                            // <-- Box-specific token params
+            "TokenEndpointQueryParameters": {                            // <-- Box-specific token params
                 "box_subject_type": "enterprise",
                 "box_subject_id": "{{boxEnterpriseId}}"
             }
@@ -499,13 +499,13 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
         "request": {
             "apiEndpoint": "https://api.box.com/2.0/events",
             "queryParameters": { "stream_type": "admin_logs" },
-            "rateLimitQPS": 10,                                          // <-- capital QPS (both casings work)
+            "rateLimitQPS": 10,                                          // <-- schema's canonical casing
             "queryWindowInMin": 5,
             "httpMethod": "GET",
             "retryCount": 3,
             "timeoutInSeconds": 60,
             "queryTimeFormat": "yyyy-MM-ddTHH:mm:ssZ",
-            "startTimeAttributeName": "created_after",                   // <-- no endTimeAttributeName
+            "StartTimeAttributeName": "created_after",                   // <-- no EndTimeAttributeName
             "headers": { "Accept": "*/*" }
         },
         "response": {
@@ -515,7 +515,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
         "paging": {
             "pagingType": "PersistentToken",
             "nextPageTokenJsonPath": "$.next_stream_position",
-            "nextPageParaName": "stream_position"
+            "NextPageParaName": "stream_position"
         },
         "dcrConfig": {
             "dataCollectionEndpoint": "{{dataCollectionEndpoint}}",
@@ -532,7 +532,7 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
 
 **Source:** `Solutions/AtlassianJiraAudit/Data Connectors/JiraAuditAPISentinelConnector_ccpv2/`
 
-**Why notable:** Simple Basic auth pattern. Offset pagination with `pageSizeParaName` (note the different casing from `PageSizeParameterName` — both work). Good starting template for simple connectors.
+**Why notable:** Simple Basic auth pattern. Offset pagination with `pageSizeParameterName` (canonical) and `offsetParaName`. Good starting template for simple connectors.
 
 ### PollingConfig
 
@@ -563,13 +563,13 @@ All examples use the **separate-file format** from `Solutions/` (see `reference/
                 "Accept": "application/json",
                 "User-Agent": "Scuba"
             },
-            "startTimeAttributeName": "from",
-            "endTimeAttributeName": "to"
+            "StartTimeAttributeName": "from",
+            "EndTimeAttributeName": "to"
         },
         "paging": {
             "pagingType": "Offset",
             "offsetParaName": "offset",
-            "pageSizeParaName": "limit",
+            "pageSizeParameterName": "limit",
             "pageSize": 1000
         },
         "response": {
@@ -714,9 +714,9 @@ All four `eventsJsonPaths` are merged into a single event stream for ingestion.
         },
         "paging": {
             "pagingType": "Offset",
-            "PageSize": 50,
-            "PageSizeParameterName": "limit",
-            "OffsetParaName": "offset"
+            "pageSize": 50,
+            "pageSizeParameterName": "limit",
+            "offsetParaName": "offset"
         },
 
         // ---- Nested enrichment chain ----
@@ -798,12 +798,12 @@ All four `eventsJsonPaths` are merged into a single event stream for ingestion.
 | Multi-connection, multi-table ASIM | Cisco Meraki | Multiple connections, `Microsoft-` outputStream |
 | Multi-endpoint, shared stream | 1Password | Same `streamName` across connections, KQL `case()` to detect source |
 | OAuth2 client_credentials | Auth0, Box | `GrantType: "client_credentials"`, `TokenEndpoint`, `TokenEndpointQueryParameters` |
-| OAuth2 authorization_code | Azure DevOps | `GrantType: "authorization_code"`, `AuthorizationCode`, `redirectUri`, `scope` |
-| startTime without endTime | Box | `startTimeAttributeName` alone is valid |
+| OAuth2 authorization_code | Azure DevOps | `GrantType: "authorization_code"`, `AuthorizationCode`, `RedirectUri`, `Scope` |
+| startTime without endTime | Box | `StartTimeAttributeName` alone is valid |
 | LinkHeader with rel link | Cisco Meraki | `linkHeaderRelLinkName: "rel=next"` or `"rel=prev"` |
 | PersistentToken | Auth0, Box | `pagingType: "PersistentToken"`, server remembers cursor |
 | POST with time window | 1Password | `httpMethod: "Post"`, `queryParametersTemplate`, `isPostPayloadJson: true` |
-| Time interval parameter | Proofpoint TAP | `queryTimeIntervalAttributeName`, `queryTimeIntervalDelimiter` |
+| Time interval parameter | Proofpoint TAP | `QueryTimeIntervalAttributeName`, `QueryTimeIntervalDelimiter` |
 | Multiple eventsJsonPaths | Proofpoint TAP | Array of JSONPaths merging multiple response branches |
 | Nested step enrichment | BigID | `shouldJoinNestedData`, `stepCollectorConfigs`, `$placeholder$` syntax |
 | Basic auth | Jira | `type: "Basic"`, `UserName`, `Password` |

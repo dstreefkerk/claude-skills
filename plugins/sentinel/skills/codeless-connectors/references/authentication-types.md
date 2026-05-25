@@ -293,8 +293,8 @@ that require separate key+secret headers (one in `ApiKeyName`, the other in
 "instructions": [{
     "type": "OAuthForm",
     "parameters": {
-        "UsernameLabel": "Client ID",
-        "PasswordLabel": "Client Secret",
+        "clientIdLabel": "Client ID",
+        "clientSecretLabel": "Client Secret",
         "connectButtonLabel": "Connect",
         "disconnectButtonLabel": "Disconnect"
     }
