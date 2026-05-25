@@ -1,5 +1,106 @@
 # Request, Response, and DCR Configuration Reference
 
+## Endpoint URL Strategy — Three-Tier Rule
+
+`apiEndpoint` can be hardcoded, parameterised by a named variable, or built from a generic
+`{{BaseUrl}}` placeholder. **When in doubt, default to Tier 3 (`{{BaseUrl}}`)** — an
+unnecessary user-input field is a minor UX annoyance, but a wrong hardcoded URL makes the
+connector non-functional in regional / self-hosted / sandbox deployments.
+
+### Tier 1 — Hardcode the full URL
+Use when ALL of these are true (no ambiguity):
+- Docs show a specific, complete URL
+- API is a public cloud SaaS with a single, well-known global endpoint
+- No mention of self-hosted, on-premises, regional, or private cloud deployments
+- No placeholder subdomains or variable host parts in the docs
+
+```json
+"apiEndpoint": "https://api.openai.com/v1/organization/audit_logs"
+```
+
+### Tier 2 — Named variable for the dynamic segment
+Use when only a specific URL segment varies (tenant, account, org, region):
+```json
+"apiEndpoint": "https://{{oktaDomain}}/api/v1/logs"
+"apiEndpoint": "https://api.github.com/enterprises/{{enterprise}}/audit-log"
+```
+Use a descriptive variable name (not `BaseUrl`) for just the dynamic part.
+
+### Tier 3 — `{{BaseUrl}}` (the safe default)
+Use when any of these are true, or when in doubt:
+- Docs show relative paths (`GET /api/events`) without an explicit base URL
+- Docs mention self-hosted, on-premises, or private cloud deployments
+- Docs use a generic placeholder like `{baseUrl}` or `{your-instance-url}`
+- Multiple possible hosts exist (production, sandbox, regional endpoints)
+
+```json
+"apiEndpoint": "{{BaseUrl}}/api/events"
+```
+
+### What goes into `{{BaseUrl}}`?
+
+`{{BaseUrl}}` = scheme + host + optional port + shared path prefix. To determine the
+boundary: collect all endpoint URLs for the connector, find their **longest common URL
+prefix stopping at `/` boundaries**, and that common prefix is the BaseUrl. Everything
+after the boundary goes in the hardcoded path portion of `apiEndpoint`.
+
+| All endpoint URLs from docs                         | BaseUrl value                 | apiEndpoint                                     |
+|-----------------------------------------------------|-------------------------------|-------------------------------------------------|
+| `https://api.vendor.com/api/events`                 | `https://api.vendor.com`      | `{{BaseUrl}}/api/events`                        |
+| `https://api.vendor.com/v2/events`, `.../v2/users`  | `https://api.vendor.com/v2`   | `{{BaseUrl}}/events`, `{{BaseUrl}}/users`       |
+| `{baseUrl}/v0201/api/events`                        | `http://localhost:1337/v0201` | `{{BaseUrl}}/api/events`                        |
+| `.../v1/users` AND `.../v2/events` (mixed versions) | `https://api.vendor.com`      | `{{BaseUrl}}/v1/users`, `{{BaseUrl}}/v2/events` |
+
+The `{{BaseUrl}}` placeholder in the `instructionSteps` Textbox must use the SAME boundary
+— include the shared version prefix (e.g. `https://api.openai.com/v1`, not
+`https://api.openai.com`). See `ui-definitions.md`.
+
+## Comprehensive Query Parameter Review
+
+For every endpoint, walk EVERY query parameter in the API docs and decide how to configure
+it. Skipping optional params produces a connector that ingests less data than the API
+allows.
+
+| Parameter category | How to configure | Example |
+|--------------------|-------------------|---------|
+| **Required identifiers** (resource IDs, scope selectors, tenant/org IDs) | `"{{variableName}}"` — user provides at runtime | `"accountId": "{{accountId}}"` |
+| **Time filtering** (start/end times, "since") | Built-in time variables via `StartTimeAttributeName`/`EndTimeAttributeName` or `queryParametersTemplate` | See **Time Filtering** below |
+| **Pagination** (page size, count, limit) | Static value — use API's maximum allowed | `"count": "100"` |
+| **Event type/category filters** | Static value — broadest coverage (all types, all categories) | `"include": "all"` |
+| **Output format** (response format, verbosity, fields) | Static value — prefer JSON, most verbose/complete | `"format": "json"` |
+| **Optional enrichment** (extra context, related data) | Static value — include if it provides richer data for security analysis | `"details": "true"` |
+
+Goal: maximum data coverage with correct API usage. Conservative omissions today become
+missing telemetry tomorrow.
+
+## queryWindowDelayInMin — when to set it
+
+`queryWindowDelayInMin` delays polling to wait for data availability on the source side.
+**Set this if** the docs mention any of:
+
+| Trigger | Suggested delay |
+|---------|-----------------|
+| "Data may be delayed", general latency notes | 5-30 min |
+| Eventual consistency / near real-time | 5-30 min |
+| Analytics or aggregated views | 60-180 min |
+| Batch / warehouse data | 120+ min |
+
+Omit only for true real-time event streams. The default behaviour (no delay) silently
+loses data when an API publishes events slightly after `TimeGenerated` would suggest.
+
+## Rate-Limit Conversion
+
+Convert the documented rate to QPS. Prefer the higher end of the allowed range —
+conservative limits slow ingestion unnecessarily and don't protect against bursts (those
+come from pagination, not baseline polling).
+
+| Documented rate | Computed QPS | Recommended `rateLimitQPS` |
+|-----------------|--------------|----------------------------|
+| 5000 / hour     | ~1.4         | 10-50 (API allows it)      |
+| 100 / minute    | ~1.7         | 10                         |
+| 10 / second     | 10           | 10                         |
+| No limit documented | —        | 10 (safe default)          |
+
 ## Request Configuration
 
 | Field | Required | Type | Default | Description |
@@ -14,6 +115,7 @@
 | **timeoutInSeconds** | No | integer (1-180) | 20 | Request timeout |
 | **queryTimeFormat** | No | string | ISO 8601 UTC | Date format. Constants: `UnixTimestamp`, `UnixTimestampInMills`. Or patterns: `yyyy-MM-dd`, `yyyy-MM-ddTHH:mm:ssZ`, etc. |
 | **isPostPayloadJson** | No | boolean | false | POST body as JSON |
+| **logResponseContent** | No | boolean | false | Diagnostic flag — when true, full response bodies are logged to Sentinel Health diagnostics for debugging. Leave `false` (or omit) for production; the logged content includes raw event data and may contain PII or credentials. |
 | **headers** | No | object | — | Request headers. Many production connectors set `"User-Agent": "Scuba"` — this identifies traffic to the CCF infrastructure (see Scuba service tag in troubleshooting). |
 | **queryParameters** | No | object | — | Query parameters |
 | **startTimeAttributeName** | No | string | — | Query param for start time. Can be used alone (without endTime) — the API will receive only a start-time filter. |
@@ -26,6 +128,7 @@
 ## Built-in Variables
 
 ### For queryParameters
+- `_now` — current timestamp in `queryTimeFormat` (resolves at request time)
 - `{_QueryWindowStartTime}` — start of current query window
 - `{_QueryWindowEndTime}` — end of current query window
 
@@ -136,7 +239,7 @@ Many production connectors (Azure DevOps, Jira, Cisco Meraki) set `User-Agent` t
 | Field | Required | Type | Default | Description |
 |-------|----------|------|---------|-------------|
 | **eventsJsonPaths** | Yes | string[] | — | JSONPath to data. E.g., `["$"]` or `["$.value"]` |
-| **format** | Yes | string | — | `json`, `csv`, or `xml` |
+| **format** | Yes | string | — | `json`, `csv`, `xml`, or `parquet` (parquet is supported but unusual for REST APIs — typically only seen with object-store-fronted endpoints) |
 | **successStatusJsonPath** | No | string | — | JSONPath to success indicator |
 | **successStatusValue** | No | string | — | Expected success value |
 | **isGzipCompressed** | No | boolean | false | Response is gzip |

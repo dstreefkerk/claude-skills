@@ -1,0 +1,865 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/microsoft/sentinel-connectors/ccf-schema/polling-config.schema.json",
+    "title": "Microsoft Sentinel Polling Configuration",
+    "description": "Schema for polling configurations in Microsoft Sentinel Codeless Connector Framework",
+    "type": "object",
+    "required": ["type", "apiVersion", "name", "location", "kind", "properties"],
+    "additionalProperties": false,
+    "properties": {
+        "type": {
+            "type": "string",
+            "description": "The resource type",
+            "const": "Microsoft.SecurityInsights/dataConnectors"
+        },
+        "apiVersion": {
+            "type": "string",
+            "description": "The API version for polling configurations",
+            "enum": [
+                "2021-10-01-preview",
+                "2022-10-01-preview",
+                "2023-02-01-preview",
+                "2023-04-01-preview",
+                "2022-12-01-preview",
+                "2024-09-01",
+                "2025-03-01"
+            ],
+            "default": "2022-10-01-preview"
+        },
+        "name": {
+            "type": "string",
+            "description": "The unique identifier name for this polling configuration connector",
+            "examples": ["ContosoEventsConnector", "ContosoAlertsConnector", "ContosoConnector"]
+        },
+        "location": {
+            "type": "string",
+            "description": "Azure region location (e.g., '{{location}}')"
+        },
+        "kind": {
+            "type": "string",
+            "description": "Kind of data connector",
+            "const": "RestApiPoller"
+        },
+        "properties": {
+            "type": "object",
+            "required": ["auth", "connectorDefinitionName", "dataType", "request", "response", "dcrConfig"],
+            "additionalProperties": false,
+            "properties": {
+                "auth": {
+                    "description": "Authentication configuration",
+                    "oneOf": [
+                        { "$ref": "#/definitions/basicAuth" },
+                        { "$ref": "#/definitions/apiKeyAuth" },
+                        { "$ref": "#/definitions/oauth2Auth" },
+                        { "$ref": "#/definitions/jwtAuth" },
+                        { "$ref": "#/definitions/accessKeyAuth" },
+                        { "$ref": "#/definitions/oracleAuth" },
+                        { "$ref": "#/definitions/pushAuth" },
+                        { "$ref": "#/definitions/visaXpayAuth" }
+                    ]
+                },
+                "connectorDefinitionName": {
+                    "type": "string",
+                    "description": "The name of the connector definition resource that provides UI metadata, permissions, and installation instructions",
+                    "examples": ["ContosoConnectorDefinition", "AcmeSecurityConnectorDefinition"]
+                },
+                "dataType": {
+                    "type": "string",
+                    "description": "Identifies the category or type of logs/events being collected from the API",
+                    "examples": ["ContosoEvents", "SecurityAlerts", "AuditLogs"]
+                },
+                "request": {
+                    "$ref": "#/definitions/requestConfig"
+                },
+                "response": {
+                    "$ref": "#/definitions/responseConfig"
+                },
+                "paging": {
+                    "description": "Optional paging configuration",
+                    "oneOf": [
+                        { "$ref": "#/definitions/linkHeaderPaging" },
+                        { "$ref": "#/definitions/persistentLinkHeaderPaging" },
+                        { "$ref": "#/definitions/nextPageUrlPaging" },
+                        { "$ref": "#/definitions/nextPageTokenPaging" },
+                        { "$ref": "#/definitions/persistentTokenPaging" },
+                        { "$ref": "#/definitions/offsetPaging" },
+                        { "$ref": "#/definitions/countBasedPaging" }
+                    ]
+                },
+                "dcrConfig": {
+                    "$ref": "#/definitions/dcrConfig"
+                },
+                "stepInfo": {
+                    "$ref": "#/definitions/stepInfo"
+                },
+                "stepCollectorConfigs": {
+                    "type": "object",
+                    "description": "Step collector configurations for nested API calls",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/stepCollectorConfig"
+                    }
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "description": "Controls whether the connector actively polls the API for data collection",
+                    "default": true
+                },
+                "extra": {
+                    "type": "object",
+                    "properties": {
+                        "transformName": { "type": "string" }
+                    }
+                },
+                "addOnAttributes": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "basicAuth": {
+            "type": "object",
+            "required": ["type", "UserName", "Password"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "Basic",
+                    "description": "Authentication method used by the API",
+                    "examples": ["Basic"]
+                },
+                "UserName": { "type": "string" },
+                "Password": { "type": "string", "format": "password" }
+            }
+        },
+        "apiKeyAuth": {
+            "type": "object",
+            "required": ["type", "ApiKey"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "APIKey",
+                    "description": "Authentication method used by the API",
+                    "examples": ["APIKey"]
+                },
+                "ApiKey": {
+                    "type": "string",
+                    "description": "The API key/token credential value for authentication",
+                    "format": "password"
+                },
+                "ApiKeyName": {
+                    "type": "string",
+                    "description": "HTTP header name used to send the API key",
+                    "default": "Authorization",
+                    "examples": ["Authorization", "X-API-Key", "X-Auth-Token", "Api-Key"]
+                },
+                "ApiKeyIdentifier": {
+                    "type": "string"
+                },
+                "IsApiKeyInPostPayload": { "type": "boolean" }
+            }
+        },
+        "oauth2Auth": {
+            "type": "object",
+            "required": ["type", "ClientId", "ClientSecret", "GrantType", "TokenEndpoint"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "OAuth2",
+                    "description": "Authentication method used by the API",
+                    "examples": ["OAuth2"]
+                },
+                "ClientId": { "type": "string" },
+                "ClientSecret": { "type": "string", "format": "password" },
+                "GrantType": {
+                    "type": "string",
+                    "enum": ["authorization_code", "client_credentials"]
+                },
+                "TokenEndpoint": { "type": "string" },
+                "AuthorizationCode": { "type": "string", "format": "password" },
+                "Scope": { "type": "string" },
+                "RedirectUri": { "type": "string" },
+                "AuthorizationEndpoint": { "type": "string" },
+                "TokenEndpointHeaders": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "TokenEndpointQueryParameters": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "AuthorizationEndpointHeaders": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "AuthorizationEndpointQueryParameters": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "IsCredentialsInHeaders": { "type": "boolean" }
+            }
+        },
+        "jwtAuth": {
+            "type": "object",
+            "required": ["type", "userName", "password", "TokenEndpoint"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "JwtToken",
+                    "description": "Authentication method used by the API",
+                    "examples": ["JwtToken"]
+                },
+                "userName": {
+                    "type": "object",
+                    "required": ["key", "value"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "key": { "type": "string" },
+                        "value": { "type": "string" }
+                    }
+                },
+                "password": {
+                    "type": "object",
+                    "required": ["key", "value"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "key": { "type": "string" },
+                        "value": { "type": "string", "format": "password" }
+                    }
+                },
+                "TokenEndpoint": { "type": "string" },
+                "IsJsonRequest": { "type": "boolean" },
+                "IsCredentialsInHeaders": {
+                    "type": "boolean",
+                    "description": "When true, sends credentials in HTTP headers instead of the request body"
+                },
+                "Headers": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "JwtTokenJsonPath": { "type": "string" },
+                "NoAccessTokenPrepend": { "type": "boolean" },
+                "TokenEndpointHttpMethod": { "type": "string" },
+                "UserTokenPrepend": { "type": "string" },
+                "UserToken": { "type": "string" }
+            }
+        },
+        "accessKeyAuth": {
+            "type": "object",
+            "required": ["type", "AccessKeyId", "AccessKeySecret"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "AliCloudSlsV1",
+                    "description": "Authentication method used by the API",
+                    "examples": ["AliCloudSlsV1"]
+                },
+                "AccessKeyId": { "type": "string" },
+                "AccessKeySecret": { "type": "string", "format": "password" }
+            }
+        },
+        "oracleAuth": {
+            "type": "object",
+            "required": ["type", "pemFile", "publicFingerprint", "tenantId", "userId"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "Oracle",
+                    "description": "Authentication method used by the API",
+                    "examples": ["Oracle"]
+                },
+                "pemFile": { "type": "string" },
+                "publicFingerprint": { "type": "string" },
+                "tenantId": { "type": "string" },
+                "userId": { "type": "string" },
+                "passPhrase": { "type": "string", "format": "password" }
+            }
+        },
+        "pushAuth": {
+            "type": "object",
+            "required": ["type", "AppId", "ServicePrincipalId"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "Push",
+                    "description": "Authentication method used by the API",
+                    "examples": ["Push"]
+                },
+                "AppId": { "type": "string" },
+                "ServicePrincipalId": { "type": "string" }
+            }
+        },
+        "visaXpayAuth": {
+            "type": "object",
+            "required": ["type", "ApiKey", "ApiSecret"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "const": "VisaXpayToken",
+                    "description": "Authentication method used by the API",
+                    "examples": ["VisaXpayToken"]
+                },
+                "ApiKey": { "type": "string" },
+                "ApiKeyName": { "type": "string" },
+                "ApiKeyIdentifier": { "type": "string" },
+                "ApiSecret": { "type": "string", "format": "password" },
+                "ApiSecretName": { "type": "string" },
+                "IsApiKeyInPostPayload": { "type": "boolean" }
+            }
+        },
+        "requestConfig": {
+            "type": "object",
+            "required": ["apiEndpoint"],
+            "additionalProperties": false,
+            "properties": {
+                "apiEndpoint": {
+                    "type": "string",
+                    "description": "Primary API endpoint URL where the connector polls for data to ingest",
+                    "examples": [
+                        "https://api.vendor.com/v1/events",
+                        "https://{{tenantId}}.vendor.com/api/security/alerts"
+                    ]
+                },
+                "httpMethod": {
+                    "type": "string",
+                    "enum": ["GET", "POST"],
+                    "default": "GET"
+                },
+                "rateLimitQPS": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Rate limit in queries per second"
+                },
+                "rateLimitConfig": { "$ref": "#/definitions/rateLimitConfig" },
+                "queryWindowInMin": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 5,
+                    "description": "Polling frequency in minutes, determining how often the connector queries the API and the time window for each query",
+                    "examples": ["1", "5", "15", "60"]
+                },
+                "queryWindowDelayInMin": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Delay in minutes to apply to the query window start time"
+                },
+                "queryTimeFormat": {
+                    "type": "string",
+                    "description": "Date/time format for query time parameters sent to the API",
+                    "default": "yyyy-MM-ddTHH:mm:ssZ",
+                    "examples": ["UnixTimestamp", "UnixTimestampInMills", "yyyy-MM-dd", "MM/dd/yyyy HH:mm:ss"]
+                },
+                "retryCount": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6,
+                    "default": 3
+                },
+                "timeoutInSeconds": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 180,
+                    "default": 20
+                },
+                "logResponseContent": { "type": "boolean" },
+                "isPostPayloadJson": { "type": "boolean" },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "queryParameters": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "StartTimeAttributeName": { "type": "string" },
+                "EndTimeAttributeName": { "type": "string" },
+                "QueryTimeIntervalAttributeName": { "type": "string" },
+                "QueryTimeIntervalPrepend": { "type": "string" },
+                "QueryTimeIntervalDelimiter": { "type": "string" },
+                "queryParametersTemplate": { "type": "string" }
+            }
+        },
+        "responseConfig": {
+            "type": "object",
+            "required": ["eventsJsonPaths", "format"],
+            "additionalProperties": false,
+            "dependencies": {
+                "successStatusValue": ["successStatusJsonPath"],
+                "successStatusJsonPath": ["successStatusValue"]
+            },
+            "properties": {
+                "eventsJsonPaths": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string" },
+                    "description": "JSON paths to extract event arrays from API response",
+                    "examples": ["[\"$.events\"]", "[\"$.data.results\"]", "[\"$\"]", "[\"$.alerts\", \"$.events\"]"]
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["json", "csv", "xml", "parquet"],
+                    "default": "json",
+                    "description": "Response format returned by the API",
+                    "examples": ["json", "csv", "xml", "parquet"]
+                },
+                "successStatusJsonPath": {
+                    "type": "string",
+                    "description": "JSON path to success status indicator in response (must be paired with successStatusValue)",
+                    "examples": ["$.status", "$.result.success", "$.meta.status"]
+                },
+                "successStatusValue": {
+                    "type": "string",
+                    "description": "Expected value indicating successful API response (must be paired with successStatusJsonPath)",
+                    "examples": ["success", "ok", "200", "true"]
+                },
+                "isGzipCompressed": {
+                    "type": "boolean",
+                    "description": "Indicates if response is compressed with gzip",
+                    "default": false
+                },
+                "compressionAlgo": {
+                    "type": "string",
+                    "enum": ["multi-gzip", "deflate"],
+                    "description": "Non-standard compression algorithm used by the API"
+                },
+                "csvDelimiter": {
+                    "type": "string",
+                    "description": "Character used to separate fields in CSV data",
+                    "default": ",",
+                    "examples": [",", ";", "\\t", "|"]
+                },
+                "hasCsvBoundary": {
+                    "type": "boolean",
+                    "description": "Indicates if CSV fields are enclosed in boundary characters (quotes)"
+                },
+                "hasCsvHeader": {
+                    "type": "boolean",
+                    "description": "Indicates if CSV data includes a header row with column names",
+                    "default": true
+                },
+                "csvEscape": {
+                    "type": "string",
+                    "description": "Escape character used for field boundaries in CSV data",
+                    "default": "\""
+                },
+                "convertChildPropertiesToArray": {
+                    "type": "boolean",
+                    "description": "Converts object properties to array elements when events are stored as object properties",
+                    "default": false
+                }
+            }
+        },
+        "linkHeaderPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": {
+                    "const": "LinkHeader",
+                    "description": "Link header pagination type (non-persistent)"
+                },
+                "linkHeaderTokenJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract pagination token from HTTP Link header",
+                    "examples": ["$.link", "$.next.url"]
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of records to request per page"
+                },
+                "pageSizeParameterName": {
+                    "type": "string",
+                    "description": "Query parameter name for page size"
+                },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "persistentLinkHeaderPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": {
+                    "const": "PersistentLinkHeader",
+                    "description": "Link header pagination type (persistent across polling cycles)"
+                },
+                "linkHeaderTokenJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract pagination token from HTTP Link header"
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of records to request per page"
+                },
+                "pageSizeParameterName": {
+                    "type": "string",
+                    "description": "Query parameter name for page size"
+                },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "nextPageUrlPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": { "const": "NextPageUrl" },
+                "nextPageUrl": { "type": "string" },
+                "nextPageUrlQueryParameters": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                },
+                "NextPageParaName": { "type": "string" },
+                "hasNextFlagJsonPath": { "type": "string" },
+                "nextPageRequestHeader": { "type": "string" },
+                "nextPageUrlQueryParametersTemplate": { "type": "string" },
+                "nextPageTokenJsonPath": { "type": "string" },
+                "isNextPageTokenRelativeUrl": { "type": "boolean" },
+                "pageSize": { "type": "integer", "minimum": 1 },
+                "pageSizeParameterName": { "type": "string" },
+                "tokenTransform": { "$ref": "#/definitions/tokenTransform" },
+                "nextPageHttpMethod": {
+                    "type": "string",
+                    "description": "HTTP method to use when fetching the next page"
+                },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "nextPageTokenPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": {
+                    "const": "NextPageToken",
+                    "description": "Next page token pagination type (non-persistent)"
+                },
+                "nextPageTokenJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract the next page token/cursor from the API response",
+                    "examples": ["$.nextPageToken", "$.cursor", "$.pagination.cursor"]
+                },
+                "nextPageTokenResponseHeader": {
+                    "type": "string",
+                    "description": "Name of HTTP response header containing the pagination token"
+                },
+                "NextPageParaName": {
+                    "type": "string",
+                    "description": "Query parameter name for passing the next page token/cursor to the API",
+                    "examples": ["cursor", "pageToken", "continuationToken", "next"]
+                },
+                "hasNextFlagJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract boolean flag indicating if more pages exist",
+                    "examples": ["$.hasMore", "$.pagination.hasNext"]
+                },
+                "nextPageRequestHeader": {
+                    "type": "string",
+                    "description": "Name of HTTP request header to use when sending the pagination token"
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of records to request per page"
+                },
+                "pageSizeParameterName": {
+                    "type": "string",
+                    "description": "Query parameter name for page size"
+                },
+                "tokenTransform": { "$ref": "#/definitions/tokenTransform" },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "persistentTokenPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": {
+                    "const": "PersistentToken",
+                    "description": "Next page token pagination type (persistent across polling cycles)"
+                },
+                "nextPageTokenJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract the next page token/cursor"
+                },
+                "nextPageTokenResponseHeader": {
+                    "type": "string",
+                    "description": "Name of HTTP response header containing the pagination token"
+                },
+                "NextPageParaName": {
+                    "type": "string",
+                    "description": "Query parameter name for passing the next page token/cursor"
+                },
+                "hasNextFlagJsonPath": {
+                    "type": "string",
+                    "description": "JSONPath expression to extract boolean flag indicating if more pages exist"
+                },
+                "nextPageRequestHeader": {
+                    "type": "string",
+                    "description": "Name of HTTP request header to use when sending the pagination token"
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of records to request per page"
+                },
+                "pageSizeParameterName": {
+                    "type": "string",
+                    "description": "Query parameter name for page size"
+                },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "offsetPaging": {
+            "type": "object",
+            "required": ["pagingType", "offsetParaName"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": {
+                    "const": "Offset",
+                    "description": "Offset-based pagination type"
+                },
+                "offsetParaName": {
+                    "type": "string",
+                    "description": "Query parameter name used to specify the starting position for offset-based pagination",
+                    "examples": ["offset", "skip", "start", "from"]
+                },
+                "offsetEndParaName": {
+                    "type": "string",
+                    "description": "Query parameter name for specifying the ending position in range-based offset pagination"
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of records to request per page from the API",
+                    "examples": ["100", "500", "1000"]
+                },
+                "pageSizeParameterName": {
+                    "type": "string",
+                    "description": "Query parameter name used to control the number of records per page",
+                    "examples": ["limit", "pageSize", "count", "per_page", "top"]
+                },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "countBasedPaging": {
+            "type": "object",
+            "required": ["pagingType"],
+            "additionalProperties": false,
+            "properties": {
+                "pagingType": { "const": "CountBasedPaging" },
+                "pageSize": { "type": "integer", "minimum": 1 },
+                "pageSizeParameterName": { "type": "string" },
+                "pageNumberParaName": { "type": "string" },
+                "zeroBasedIndexing": { "type": "boolean" },
+                "hasNextFlagJsonPath": { "type": "string" },
+                "totalResultsJsonPath": { "type": "string" },
+                "pageNumberJsonPath": { "type": "string" },
+                "pageCountJsonPath": { "type": "string" },
+                "pagingInfoPlacement": {
+                    "type": "string",
+                    "description": "Where to place paging information in the request"
+                },
+                "pagingQueryParamOnly": {
+                    "type": "boolean",
+                    "description": "When true, only send the paging query parameter without other query parameters"
+                }
+            }
+        },
+        "tokenTransform": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "transformType": {
+                    "type": "string",
+                    "enum": ["UriToQueryParam", "Base64Decode", "JsonParse", "RegexParse", "UrlDecode"],
+                    "description": "Type of string transformation to apply to the pagination token"
+                },
+                "transformParameter": {
+                    "type": "string",
+                    "description": "Parameter to use with the transform (e.g., regex pattern, JSON path)"
+                }
+            }
+        },
+        "rateLimitConfig": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "evaluation": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "checkMode": { "type": "string", "enum": ["AlwaysCheck", "OnlyWhen429"] },
+                        "stopCondition": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "type": "string", "enum": ["FixedRemainingQuota", "PercentageRemaining"] },
+                                "value": { "type": "integer" }
+                            }
+                        }
+                    }
+                },
+                "extraction": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "source": { "type": "string", "enum": ["DefaultHeaders", "CustomHeaders"] },
+                        "headers": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "limit": { "$ref": "#/definitions/rateLimitHeaderDefinition" },
+                                "remaining": { "$ref": "#/definitions/rateLimitHeaderDefinition" },
+                                "reset": { "$ref": "#/definitions/rateLimitHeaderDefinition" },
+                                "retryAfter": { "$ref": "#/definitions/rateLimitHeaderDefinition" }
+                            }
+                        }
+                    }
+                },
+                "retryStrategy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "useResetOrRetryAfterHeaders": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "rateLimitHeaderDefinition": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string" },
+                "format": { "type": "string", "enum": ["Integer", "UnixTimeSeconds", "UnixTimeMilliseconds", "TimestampUtc", "Seconds", "Milliseconds", "FloatSeconds"] }
+            }
+        },
+        "dcrConfig": {
+            "type": "object",
+            "required": ["streamName", "dataCollectionEndpoint", "dataCollectionRuleImmutableId"],
+            "additionalProperties": false,
+            "properties": {
+                "streamName": {
+                    "type": "string",
+                    "description": "The DCR stream name that defines the schema for data transformation and routing",
+                    "examples": ["Custom-ContosoEvents", "Custom-SecurityAlerts", "Custom-AuditLogs"]
+                },
+                "dataCollectionEndpoint": {
+                    "type": "string",
+                    "description": "The Azure Monitor Data Collection Endpoint (DCE) URL where data will be ingested",
+                    "default": "{{dataCollectionEndpoint}}"
+                },
+                "dataCollectionRuleImmutableId": {
+                    "type": "string",
+                    "description": "The immutable identifier of the Data Collection Rule (DCR) that processes and routes the ingested data",
+                    "default": "{{dataCollectionRuleImmutableId}}"
+                }
+            }
+        },
+        "stepInfo": {
+            "type": "object",
+            "required": ["stepType", "nextSteps"],
+            "additionalProperties": false,
+            "properties": {
+                "stepType": {
+                    "type": "string",
+                    "enum": ["Nested", "AsyncJobStart", "AsyncJobWait"],
+                    "description": "Defines the type of multi-step processing workflow required by the API"
+                },
+                "nextSteps": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Array of step execution definitions that specify how to process multi-step API workflows",
+                    "items": {
+                        "type": "object",
+                        "required": ["stepId", "stepPlaceholdersParsingKql"],
+                        "additionalProperties": false,
+                        "properties": {
+                            "stepId": {
+                                "type": "string",
+                                "description": "Unique identifier for this step in the workflow",
+                                "examples": ["fetchIncidentDetails", "pollJobStatus", "retrieveResults"]
+                            },
+                            "stepPlaceholdersParsingKql": {
+                                "type": "string",
+                                "description": "KQL expression to parse and extract placeholder values from the step response",
+                                "examples": [
+                                    "| extend _JobId = jobId",
+                                    "| extend _IncidentId = id, _IncidentUrl = detailsUrl"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "stepCollectorConfig": {
+            "type": "object",
+            "required": ["request", "response"],
+            "additionalProperties": false,
+            "properties": {
+                "shouldJoinNestedData": { "type": "boolean" },
+                "joinedDataStepName": { "type": "string" },
+                "request": { "$ref": "#/definitions/requestConfig" },
+                "response": { "$ref": "#/definitions/responseConfig" },
+                "paging": {
+                    "description": "Optional paging configuration for nested step",
+                    "oneOf": [
+                        { "$ref": "#/definitions/linkHeaderPaging" },
+                        { "$ref": "#/definitions/persistentLinkHeaderPaging" },
+                        { "$ref": "#/definitions/nextPageUrlPaging" },
+                        { "$ref": "#/definitions/nextPageTokenPaging" },
+                        { "$ref": "#/definitions/persistentTokenPaging" },
+                        { "$ref": "#/definitions/offsetPaging" },
+                        { "$ref": "#/definitions/countBasedPaging" }
+                    ]
+                }
+            }
+        }
+    }
+}

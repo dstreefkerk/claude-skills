@@ -27,8 +27,11 @@ Gather the following:
 2. **Table schema** — JSON array of `{name, type}` describing the final table columns
    - Common types: `string`, `int`, `long`, `real`, `bool`, `datetime`, `dynamic`, `guid`
    - Must include `TimeGenerated` (datetime)
-3. **Table plan** — `Analytics` (default, full KQL) or `Basic` (lower cost, limited queries)
-4. **Retention** — interactive retention (days) and total/archive retention (days)
+3. **Table plan** — one of `Analytics`, `Basic`, or `Auxiliary` (from `table.schema.json` enum):
+   - `Analytics` (default) — full KQL surface, billed per ingested GB, supports detections and alerts
+   - `Basic` — lower cost, limited query surface (no joins/lookups against the table), best for high-volume logs you mostly forward and rarely query
+   - `Auxiliary` — cheapest tier, KQL-only via search jobs and summary rules, NOT queryable interactively (only via search jobs or restoring to Analytics). Use for raw data you need to retain for compliance/forensics but rarely touch.
+4. **Retention** — `retentionInDays` (4–730) for active queryable storage; `totalRetentionInDays` (4–4383) including archived storage
 5. **DCE** — Data Collection Endpoint name; must be in the same region as the workspace
 6. **DCR name** — Data Collection Rule name
 7. **Stream name** — must start with `Custom-` prefix (e.g., `Custom-VendorAlerts_CL`)

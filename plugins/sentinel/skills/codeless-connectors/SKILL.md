@@ -29,10 +29,15 @@ Detailed references are in sibling files - read them as needed:
 - `references/asim-schemas.md`  -- ASIM normalization schema reference for all 10 supported event types
 - `references/create-ui-definition.md`  -- createUiDefinition.json builder guide for Azure Portal deployment UI
 - `references/production-examples.md`  -- Annotated excerpts from production connectors (Cisco Meraki, 1Password, Auth0, Azure DevOps, Box, Jira, Proofpoint TAP, BigID)
-- `scripts/validate_connector.py`  -- Automated validation script for ARM templates (run after every template generation)
+- `scripts/validate_source_files.py`  -- Source-file validator (jsonschema + domain rules + cross-file consistency). Run during authoring against the building-block JSON files BEFORE packaging. Catches schema violations, OAuth2 conditional requirements, the `{{apiKey}}` literal-placeholder rule, reserved table prefixes, catchall/envelope/reserved column names, instructionSteps UX traps, and cross-file mismatches (streamName, dataType, connectorDefinitionName, Textbox-to-placeholder binding). Auto-detects file kinds; supports `--folder` for whole-connector validation. Requires `jsonschema` (`pip install jsonschema`).
+- `scripts/validate_connector.py`  -- Automated validation script for the wrapped ARM template (run AFTER packaging with `createSolutionV3.ps1`). Complementary to `validate_source_files.py` — catches ARM-level issues (bracket escaping, dependency chains, top-level table existence) that source-file validation can't see.
 - `scripts/test-ccp-mapping.ps1`  -- Tests Definition->Poller->DCR->Table mapping via get-ccp-details.ps1 (run against extracted separate files)
 - `references/packaging.md`  -- Solution packaging with createSolutionV3.ps1, building block file structure, naming conventions
 - `references/ccf-packaging-details.md`  -- CCF packaging: folder naming, file suffixes, cross-file mapping, multi-poller patterns, connector kind specifics
+- `references/field-discovery.md`  -- Column inventory rules: doc-source ordering, event-catalog methodology, forbidden columns (catchall/envelope/reserved/KQL-keyword), API value-to-type mapping. Read this whenever designing a new custom table.
+- `schemas/*.schema.json`  -- JSON Schemas (draft-07) for the four CCF source-file kinds (connector definition, polling config, DCR, table). Use with `jsonschema` to validate building-block files BEFORE packaging. See `schemas/README.md` for usage and the cross-file consistency rules schemas can't express.
+- `references/table-naming.md`  -- Custom table naming algorithm (`{Vendor}{Endpoint}_CL`), 4-63 char limit, and the full Azure Monitor reserved-prefix list (40+ prefixes that cause silent deployment failures).
+- `references/nested-polling.md`  -- Parent/child endpoint patterns: `stepInfo` + `stepCollectorConfigs`, placeholder syntax (`_Name`/`$_Name$`), restricted KQL subset, and `shouldJoinNestedData` placement.
 - `scripts/README.md`  -- Packaging scripts guide: prerequisites, running createSolutionV3.ps1, data input format, script architecture
 
 ## Architecture Overview
@@ -150,6 +155,9 @@ Each dataFlow specifies: input streams, destinations, `transformKql`, and `outpu
 ## RestApiPoller Configuration
 
 ### Authentication Types
+
+The four common auth types cover ~95% of CCF connectors:
+
 | Type | Use When |
 |------|----------|
 | `Basic` | Username + password |
@@ -157,7 +165,12 @@ Each dataFlow specifies: input streams, destinations, `transformKql`, and `outpu
 | `OAuth2` | `authorization_code` or `client_credentials` grant |
 | `JwtToken` | JWT token via username/password endpoint |
 
-OAuth2 does NOT support client certificate credentials. See `references/authentication-types.md`.
+OAuth2 does NOT support client certificate credentials.
+
+Four additional auth types appear in `rest_api_poller.schema.json` for vendor-specific
+flows: `AliCloudSlsV1` (Alibaba Cloud Log Service), `Oracle` (OCI PEM-key auth), `Push`
+(Entra-app inbound auth for push connectors), `VisaXpayToken` (two-credential
+key+secret). See `references/authentication-types.md` for all eight.
 
 ### Pagination Types
 | Type | Use When |
@@ -223,6 +236,37 @@ Additional for `queryParametersTemplate`: `{_APIKeyName}`, `{_APIKey}`
 
 See `references/ui-definitions.md` for full property details.
 
+## Field Discovery & Column Definition
+
+Custom table schemas are the most common place to make silent mistakes — invented columns,
+catchall buckets, or pagination metadata declared as event fields. Before designing any
+new custom table:
+
+1. **Find three doc sources, not one.** Look for a machine-readable spec (OpenAPI/Swagger/Postman),
+   an event/field catalog page, AND human-readable API reference. For log/event/audit APIs,
+   the event catalog page is usually the most complete field source — often 100-400+
+   unique fields when you union across all event types. The OpenAPI spec alone is rarely
+   enough.
+2. **Never invent columns.** Every column must trace to a specific documented field. Better
+   to ship 40 verified columns than 200 plausible ones.
+3. **Forbidden:** catchall columns (`RawData`, `EventData`, `Payload`, `AdditionalData`,
+   `Properties`, `Details`, `Body`, `Content`); pagination/envelope metadata (`offset`, `limit`,
+   `total`, `hasMore`, `cursor`); reserved Azure Monitor names (`TenantId`, `Type`,
+   `_TimeReceived`, `_ItemId`, `_ResourceId`, `_SubscriptionId`, `_IsBillable`, `_BilledSize`,
+   `SourceSystem`, `MG`, `Computer`, `RawData`).
+4. **Rename KQL-keyword collisions.** Column names matching KQL operators (`project`, `title`,
+   `where`, `count`, `order`, `search`, `union`, etc.) force users to write `['ColumnName']`
+   in every query. Rename at ingestion: `project` -> `ProjectName`, `title` -> `EventTitle`.
+5. **PascalCase + flatten nested objects.** `event_type` -> `EventType`,
+   `actor_location.country_code` -> `ActorLocationCountryCode`. Pattern:
+   `^[A-Za-z][A-Za-z0-9_]*$`.
+6. **Type mapping:** any integer (including snowflake IDs / epoch nanoseconds) -> `real`;
+   UUIDs -> `guid`; arrays and nested objects -> `dynamic`; ISO 8601 timestamps -> `datetime`.
+7. **TimeGenerated (datetime) is REQUIRED as the first column** in every table.
+
+See `references/field-discovery.md` for the full set of rules with examples and the
+column-definition completion checklist.
+
 ## Multiple Connections Per Connector
 
 A single connector definition can have multiple RestApiPoller connections with different:
@@ -231,6 +275,23 @@ A single connector definition can have multiple RestApiPoller connections with d
 - Stream names (routing to different DCR dataFlows/tables)
 
 Pattern: Create separate named connections for each log source (e.g., auth logs at 1 min, activity logs at 5 min, config logs at 15 min).
+
+When the same connector polls multiple endpoints that each produce a different table:
+- All array elements share the SAME `connectorDefinitionName` (pattern: `{Vendor}ConnectorDefinition`)
+- Each array element has a UNIQUE `dataType` matching its destination table name
+- See `references/table-naming.md` for the full multi-poller pattern.
+
+## Nested (Parent/Child) Polling
+
+When an API requires "list IDs then fetch each detail" — e.g. list tenants then per-tenant
+audit logs, or list items then per-item enrichment — use `stepInfo` + `stepCollectorConfigs`
+on the parent endpoint instead of authoring a second top-level polling config. The parent
+extracts placeholder values via a restricted KQL expression (`stepPlaceholdersParsingKql`),
+and the child URL references them with `$_PlaceholderName$` syntax.
+
+See `references/nested-polling.md` for the structure, the restricted KQL subset, and the
+`shouldJoinNestedData` placement rule (it goes on the `stepCollectorConfigs` entry, NOT on
+`stepInfo` — wrong placement is silently ignored).
 
 ## Critical Gotchas
 
@@ -264,30 +325,75 @@ Pattern: Create separate named connections for each log source (e.g., auth logs 
 16. **Network isolation**: allowlist CCP IPs using the **Scuba** Azure service tag
 17. **`securestring`** for all credentials  -- values unreadable after deployment
 18. **Table names in content templates must NOT include workspace prefix**  -- the Portal adds workspace scoping automatically; compound names like `workspace/Table_CL` cause 404 from double-nesting (`/workspaces/{ws}/tables/{ws}/Table_CL`)
+19. **Custom table names cannot start with reserved prefixes** -- 40+ prefixes are reserved by Azure Monitor / Sentinel system tables (`Cisco`, `Event`, `Custom`, `Cloud`, `Sentinel`, `Security`, `Threat`, `Common`, `Azure`, `AWS`, `Google`, etc.). The deployment error is generic (`InvalidTableName` or schema validation failure) and does not call out the prefix as the cause. See `references/table-naming.md` for the full list.
+20. **CCF source-file `ApiKey` placeholder MUST be the literal `"{{apiKey}}"`** -- not a vendor-specific name like `"{{bearerToken}}"`. This is a fixed CCF template variable for the connector-builder / Test Connector tooling. Deployed ARM templates use `"[[parameters('apikey')]"` instead (different context). Vendor-friendly labels go in the `instructionSteps` Textbox `label`, not in the placeholder name.
+21. **CCF does not support unauthenticated connectors** -- every polling config must declare `properties.auth`. If a vendor API truly has no auth, you cannot build a CCF connector for it without a proxy that injects an auth header.
+22. **`instructionSteps` UX traps** -- `ConnectionToggleButton` MUST be the last element of the credential step's `instructions` array; every required Textbox MUST include `"validations": { "required": true }`; Textbox `name` MUST match the template-variable name in the polling config (e.g. `auth.ApiKey: "{{apiKey}}"` requires `name: "apiKey"`). See `references/ui-definitions.md`.
+
+## Phased Build & Validation Gates
+
+When building a connector from scratch, work through these five phases in order and
+**validate at the gate between each phase** before starting the next. Don't try to author
+the whole template in one shot — Microsoft's own connector-builder agent uses 39 sub-steps
+across these phases for a reason.
+
+| Phase | Output | Gate before next phase |
+|-------|--------|------------------------|
+| **1. Discovery** | API spec(s), event catalog URL, vendor name, folder layout | Three doc sources collected; spec verified machine-readable |
+| **2. Polling Config** | `request`, `auth`, `response`, `paging`, `dcrConfig`, `connectorDefinitionName`, `dataType` | Polling JSON validates against `rest_api_poller.schema.json` |
+| **3. Tables** | Custom `_CL` table(s) with verified column inventory | `field-discovery.md` checklist passes; table JSON validates |
+| **4. DCR** | `streamDeclarations`, `destinations`, `dataFlows`, `transformKql` | Stream names match polling stream; transformKql uses only supported functions |
+| **5. Connector Definition** | UI metadata, description, graph queries, connectivity criteria, permissions, instruction steps | `validate_connector.py` passes; deployment checklist below complete |
+
+**Hard rule:** if the previous phase's output isn't valid, stop and fix it before authoring
+the next phase. Cascading errors from a bad polling config into a hand-edited DCR are the
+single biggest source of "Connect button hangs" deployments.
 
 ## Deployment Checklist
 
-- [ ] Custom table has `_CL` suffix and correct schema
-- [ ] Stream declarations match raw incoming data shape (not transformed output)
-- [ ] `transformKql` uses only supported KQL subset
-- [ ] `TimeGenerated` produced by every transformation
-- [ ] ARM escaping correct: single `[` in DataConnector templates, double `[[` in ResourcesDataConnector templates (except `/metadata` resources which always use `[[`)
-- [ ] `securestring` for all credentials
-- [ ] DCE in same region as DCR
+### Phase 1 — Discovery
+- [ ] OpenAPI/Swagger/Postman spec located (or "no spec available" confirmed after 2-3 attempts)
+- [ ] Event/field catalog page located if API has event types
+- [ ] Vendor name extracted from docs (not invented)
+
+### Phase 2 — Polling Config
+- [ ] `apiEndpoint`, `httpMethod`, `queryWindowInMin`, `queryTimeFormat` set
 - [ ] `rateLimitQPS` and `retryCount` set for source API limits
 - [ ] Page size maximized to reduce pagination calls
 - [ ] Polling intervals staggered across connections
+- [ ] `eventsJsonPaths` correctly locates events in response (matches actual API response shape)
+- [ ] If multiple endpoints: each has its own `properties.response` + `properties.paging`
+- [ ] Pagination type matches API pattern (LinkHeader vs NextPageToken vs Offset vs CountBasedPaging)
+- [ ] `NextPageParaName` casing correct (uppercase N and P) where applicable
+- [ ] `securestring` for all credentials
+
+### Phase 3 — Tables
+- [ ] Custom table has `_CL` suffix and correct schema
+- [ ] Columns inventory passes `references/field-discovery.md` checklist
+- [ ] No catchall, envelope, reserved, or KQL-keyword column names
+- [ ] `TimeGenerated` (datetime) is first column in every table
+
+### Phase 4 — DCR
+- [ ] Stream declarations match raw incoming data shape (not transformed output)
+- [ ] Stream names in `streamDeclarations` start with `Custom-` prefix
+- [ ] `transformKql` uses only supported KQL subset
+- [ ] `TimeGenerated` produced by every transformation
+- [ ] No blank lines in KQL transformation strings
+- [ ] `outputStream` prefix matches destination: `Custom-` for custom tables, `Microsoft-` for ASIM
+- [ ] DCE in same region as DCR
+
+### Phase 5 — Connector Definition + ARM Wrapper
+- [ ] ARM escaping correct: single `[` in DataConnector templates, double `[[` in ResourcesDataConnector templates (except `/metadata` resources which always use `[[`)
 - [ ] `connectivityCriteria` type is `HasDataConnectors` (pull) or `IsConnectedQuery` (push)
 - [ ] Connector `kind` is `Customizable`
 - [ ] Solution version is 3.0.0+
-- [ ] No blank lines in KQL transformation strings
 - [ ] `contentPackages` resource has `contentProductId` and `packageId` properties
-- [ ] Previous deployment resources cleaned up before redeploying
 - [ ] ConnectorDefinition contentTemplate depends only on contentPackages (not Connections template)
 - [ ] Custom tables exist as top-level ARM resources (not just inside contentTemplate)
 - [ ] Table resources in nested template have no `kind` or `location` properties
 - [ ] Connections contentProductId uses `'rdc'` prefix
 - [ ] Connections metadata parentId references an existing resource
+- [ ] Previous deployment resources cleaned up before redeploying
 
 ## Key Microsoft Docs References
 - Create pull connector: https://learn.microsoft.com/en-us/azure/sentinel/create-codeless-connector

@@ -1,5 +1,40 @@
 # Authentication Types Reference
 
+## CCF Source-File Placeholders vs Deployed ARM Parameters
+
+There are two distinct quoting contexts for credential placeholders, and confusing them
+causes silent schema-validation failures:
+
+| Context | Placeholder syntax | Example |
+|---------|--------------------|---------|
+| **CCF source file** (`polling_config.json` used by the connector builder / `Test Connector` tooling, before ARM wrapping) | `{{placeholder}}` — and `ApiKey` MUST use the EXACT literal `"{{apiKey}}"` | `"ApiKey": "{{apiKey}}"` |
+| **Deployed ARM template** (`mainTemplate.json` for content-hub deployment) | `[[parameters('name')]` (double bracket inside `ResourcesDataConnector` nested templates) | `"ApiKey": "[[parameters('apikey')]"` |
+
+**Critical rule for CCF source files:** the `APIKey.ApiKey` value must be the literal string
+`"{{apiKey}}"`. Do NOT substitute vendor-specific names like `"{{bearerToken}}"`,
+`"{{githubToken}}"`, or `"{{1passwordToken}}"` — these will fail schema validation in the
+connector tester and connector builder. Vendor-friendly UI labels go in the
+`instructionSteps` Textbox `label`, not in the placeholder name.
+
+For OTHER credentials the placeholder name is conventional (e.g. `{{username}}`,
+`{{password}}`, `{{clientId}}`, `{{clientSecret}}`, `{{code}}`). The textbox `name` in
+`instructionSteps` must match the placeholder exactly so parameter-consistency validation
+passes — see `ui-definitions.md`.
+
+## Public / unauthenticated APIs
+
+**CCF does not support unauthenticated connectors.** Every CCF polling configuration must
+declare `properties.auth` with a type of `Basic`, `APIKey`, `OAuth2`, or `JwtToken`. If a
+vendor API truly has no authentication, the user cannot build a CCF connector for it
+without putting a proxy in front that adds an auth header.
+
+## Auth method must come from API docs
+
+When the user proposes an auth method that contradicts the vendor documentation, follow
+the documentation. APIs frequently support multiple auth methods (Basic + OAuth2, APIKey
+with multiple header conventions); the choice is between *documented* options. User input
+selects from documented options — it does not override them.
+
 ## Basic Auth
 ```json
 "auth": {
@@ -34,6 +69,20 @@
 - Default: `Authorization: token {apikey}`
 - With `ApiKeyName: "X-Auth"`, `ApiKeyIdentifier: "Bearer"`: `X-Auth: Bearer {apikey}`
 - With `ApiKeyName: ""`: `Authorization: {apikey}` (no identifier prefix)
+
+### ApiKeyIdentifier — match the vendor's exact casing
+
+The `ApiKeyIdentifier` is the prefix before the token value in the Authorization header:
+`Authorization: {ApiKeyIdentifier} {ApiKey}`. Use the EXACT identifier from the API docs —
+do not assume `Bearer` is always correct.
+
+| Documentation says               | ApiKeyIdentifier | Result header                           |
+|----------------------------------|------------------|-----------------------------------------|
+| `Authorization: Bearer <token>`  | `"Bearer"`       | `Authorization: Bearer abc123`          |
+| `Authorization: token <token>`   | `"token"`        | `Authorization: token abc123`           |
+| `Authorization: Token <token>`   | `"Token"`        | `Authorization: Token abc123`           |
+| `Authorization: SSWS <token>`    | `"SSWS"`         | `Authorization: SSWS abc123`            |
+| `X-API-Key: <token>` (no prefix) | `""`             | Uses `ApiKeyName: "X-API-Key"` directly |
 
 ### Handling APIs Requiring Multiple Auth Headers
 CCP's APIKey type handles only one header natively. For a second auth header, pass it as a custom request header:
@@ -172,6 +221,70 @@ CCP's APIKey type handles only one header natively. For a second auth header, pa
 - Requires username/password for token acquisition
 - Does not support API key-based token requests
 - Custom header auth (without username/password) not supported
+
+## Less-Common Auth Types
+
+CCF supports four additional auth types beyond Basic/APIKey/OAuth2/JwtToken. These appear
+in the `rest_api_poller.schema.json` `auth` discriminator and are valid for production use,
+but documentation is sparse. Use the auth-type `const` value verbatim — the schema
+rejects any other casing.
+
+### AliCloudSlsV1 — Alibaba Cloud Log Service
+
+```json
+"auth": {
+    "type": "AliCloudSlsV1",
+    "AccessKeyId": "[[parameters('accessKeyId')]",
+    "AccessKeySecret": "[[parameters('accessKeySecret')]"
+}
+```
+Required: `AccessKeyId`, `AccessKeySecret`. No other properties accepted.
+
+### Oracle — Oracle Cloud Infrastructure PEM-key auth
+
+```json
+"auth": {
+    "type": "Oracle",
+    "pemFile": "[[parameters('pemFile')]",
+    "publicFingerprint": "[[parameters('publicFingerprint')]",
+    "tenantId": "[[parameters('tenantId')]",
+    "userId": "[[parameters('userId')]",
+    "passPhrase": "[[parameters('passPhrase')]"
+}
+```
+Required: `pemFile`, `publicFingerprint`, `tenantId`, `userId`. Optional: `passPhrase`
+(when the PEM key is passphrase-protected). Used by the OCI connector kind.
+
+### Push — Entra app-based push auth
+
+```json
+"auth": {
+    "type": "Push",
+    "AppId": "[[parameters('appId')]",
+    "ServicePrincipalId": "[[parameters('servicePrincipalId')]"
+}
+```
+Required: `AppId`, `ServicePrincipalId`. This is the auth schema for the `Push` connector
+kind — the connector validates that the inbound caller's Entra app matches these values,
+rather than initiating an outbound auth flow. See `push-connectors.md`.
+
+### VisaXpayToken — Visa Xpay API
+
+```json
+"auth": {
+    "type": "VisaXpayToken",
+    "ApiKey": "[[parameters('apiKey')]",
+    "ApiSecret": "[[parameters('apiSecret')]",
+    "ApiKeyName": "X-Pay-Token",
+    "ApiKeyIdentifier": "",
+    "ApiSecretName": "X-Pay-Secret",
+    "IsApiKeyInPostPayload": false
+}
+```
+Required: `ApiKey`, `ApiSecret`. Optional: `ApiKeyName`, `ApiKeyIdentifier`,
+`ApiSecretName`, `IsApiKeyInPostPayload`. Two-credential variant of APIKey for vendors
+that require separate key+secret headers (one in `ApiKeyName`, the other in
+`ApiSecretName`).
 
 ## UI Configuration for Auth
 

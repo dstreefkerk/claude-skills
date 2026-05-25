@@ -1,0 +1,255 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/microsoft/sentinel-connectors/ccf-schema/data-collection-rule.schema.json",
+    "title": "Azure Data Collection Rule (DCR)",
+    "description": "Schema for Azure Data Collection Rules used in Microsoft Sentinel Codeless Connector Framework",
+    "type": "object",
+    "required": ["name", "apiVersion", "type", "location", "properties"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the Data Collection Rule. Must be unique within the resource group.",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "apiVersion": {
+            "type": "string",
+            "description": "The API version for the Data Collection Rule",
+            "enum": [
+                "2021-04-01",
+                "2021-09-01-preview",
+                "2022-06-01-preview",
+                "2022-06-01",
+                "2023-03-11",
+                "2023-04-01-preview",
+                "2024-03-11"
+            ],
+            "default": "2024-03-11"
+        },
+        "type": {
+            "type": "string",
+            "description": "The resource type",
+            "const": "Microsoft.Insights/dataCollectionRules"
+        },
+        "location": {
+            "type": "string",
+            "description": "The Azure region location (e.g., 'eastus', '{{location}}')"
+        },
+        "identity": {
+            "type": "object",
+            "description": "Managed identity configuration for the DCR",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["SystemAssigned", "UserAssigned", "SystemAssigned,UserAssigned", "None"],
+                    "description": "The type of managed identity"
+                },
+                "userAssignedIdentities": {
+                    "type": "object",
+                    "description": "User-assigned managed identities",
+                    "additionalProperties": {
+                        "type": "object"
+                    }
+                }
+            }
+        },
+        "kind": {
+            "type": "string",
+            "description": "Optional kind property for the DCR"
+        },
+        "sku": {
+            "type": "object",
+            "description": "SKU configuration for the DCR",
+            "properties": {
+                "capacity": {
+                    "type": "integer",
+                    "description": "SKU capacity"
+                },
+                "family": {
+                    "type": "string",
+                    "description": "SKU family"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "SKU name"
+                },
+                "size": {
+                    "type": "string",
+                    "description": "SKU size"
+                },
+                "tier": {
+                    "type": "string",
+                    "description": "SKU tier"
+                }
+            }
+        },
+        "tags": {
+            "type": "object",
+            "description": "Resource tags for organizing and managing tables within Azure.",
+            "additionalProperties": {
+                "type": "string"
+            },
+            "examples": [
+                "{\"connector\": \"ContosoSecurity\", \"dataType\": \"Events\", \"version\": \"1.0\"}",
+                "{\"environment\": \"production\", \"owner\": \"SecurityTeam\"}",
+                "{\"costCenter\": \"IT-Security\", \"application\": \"SIEM\"}"
+            ]
+        },
+        "dependsOn": {
+            "type": "array",
+            "description": "Array of Azure resource IDs that must be deployed before this Data Collection Rule.",
+            "items": {
+                "type": "string"
+            },
+            "examples": [
+                "[\"[resourceId('Microsoft.OperationalInsights/workspaces/tables', parameters('workspaceName'), 'ContosoEvents_CL')]\"]",
+                "[\"[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName'))]\"]"
+            ]
+        },
+        "properties": {
+            "type": "object",
+            "required": ["destinations", "dataFlows"],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Optional description of the Data Collection Rule purpose and configuration"
+                },
+                "dataCollectionEndpointId": {
+                    "type": "string",
+                    "description": "Reference to the Data Collection Endpoint (DCE) resource used for data ingestion.",
+                    "default": "{{dataCollectionEndpointId}}"
+                },
+                "streamDeclarations": {
+                    "type": "object",
+                    "description": "Object containing custom stream definitions that describe the structure of data being ingested.",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/streamDeclaration"
+                    }
+                },
+                "destinations": {
+                    "type": "object",
+                    "description": "Defines where the ingested data should be sent after processing.",
+                    "required": ["logAnalytics"],
+                    "properties": {
+                        "logAnalytics": {
+                            "type": "array",
+                            "description": "Array of Log Analytics workspace destinations where ingested data will be sent.",
+                            "items": {
+                                "$ref": "#/definitions/logAnalyticsDestination"
+                            }
+                        },
+                        "azureMonitorMetrics": {
+                            "type": "object",
+                            "description": "Azure Monitor Metrics destination configuration for metric data ingestion."
+                        }
+                    }
+                },
+                "dataFlows": {
+                    "type": "array",
+                    "description": "Array of data flow configurations that define how data streams are routed to destinations, with optional transformations.",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/dataFlow"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "streamDeclaration": {
+            "type": "object",
+            "required": ["columns"],
+            "properties": {
+                "columns": {
+                    "type": "array",
+                    "description": "Array of column definitions that describe the structure and data types of the custom stream.",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/columnDefinition"
+                    }
+                }
+            }
+        },
+        "columnDefinition": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The unique identifier name for a column within the stream declaration.",
+                    "examples": ["TimeGenerated", "EventType", "SourceIPAddress", "UserPrincipalName", "RawData"]
+                },
+                "type": {
+                    "type": "string",
+                    "description": "The data type for the stream column that determines how data is parsed and stored.",
+                    "enum": ["string", "int", "long", "real", "boolean", "datetime", "dynamic", "guid", "timespan"],
+                    "examples": ["datetime", "string", "long", "dynamic"]
+                }
+            }
+        },
+        "logAnalyticsDestination": {
+            "type": "object",
+            "required": ["workspaceResourceId", "name"],
+            "properties": {
+                "workspaceResourceId": {
+                    "type": "string",
+                    "description": "The Azure resource ID of the Log Analytics workspace that will receive the ingested data.",
+                    "default": "{{workspaceResourceId}}"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "A unique identifier name for this Log Analytics destination, used to reference it in data flows.",
+                    "examples": ["clv2ws1", "sentinelWorkspace", "primaryWorkspace"]
+                }
+            }
+        },
+        "dataFlow": {
+            "type": "object",
+            "required": ["streams", "destinations"],
+            "properties": {
+                "streams": {
+                    "type": "array",
+                    "description": "Array of source stream names that provide data to this data flow.",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": ["[\"Custom-ContosoEvents_CL\"]", "[\"Microsoft-Syslog\"]"]
+                },
+                "destinations": {
+                    "type": "array",
+                    "description": "Array of destination names where the data from this flow will be sent.",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    },
+                    "examples": ["[\"clv2ws1\"]", "[\"sentinelWorkspace\"]"]
+                },
+                "outputStream": {
+                    "type": "string",
+                    "description": "The target table name in the Log Analytics workspace where data will be written.",
+                    "examples": ["Custom-ContosoEvents_CL", "Microsoft-Syslog"]
+                },
+                "builtInTransform": {
+                    "type": "string",
+                    "description": "Built-in transformation to apply before transformKql"
+                },
+                "captureOverflow": {
+                    "type": "boolean",
+                    "description": "Whether to capture overflow data"
+                },
+                "transformKql": {
+                    "type": "string",
+                    "description": "Optional KQL (Kusto Query Language) query to transform, filter, or enrich data before it reaches the destination.",
+                    "examples": [
+                        "source | where Severity != \"Informational\"",
+                        "source | extend ParsedData = parse_json(RawData) | project TimeGenerated, EventType, ParsedData",
+                        "source | project-rename EventTime = timestamp | extend ProcessedTime = now()",
+                        "source | extend GeoLocation = geo_location(IPAddress)"
+                    ]
+                }
+            }
+        }
+    }
+}

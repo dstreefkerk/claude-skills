@@ -1,0 +1,812 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/microsoft/sentinel-connectors/ccf-schema/connector-definition.schema.json",
+    "title": "Microsoft Sentinel Data Connector Definition",
+    "description": "Schema for data connector definitions in Microsoft Sentinel Codeless Connector Platform (CCP)",
+    "type": "object",
+    "required": ["name", "apiVersion", "type", "location", "kind", "properties"],
+    "additionalProperties": false,
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name of the data connector definition (must be unique within workspace)",
+            "minLength": 1,
+            "maxLength": 31,
+            "pattern": "\\S",
+            "examples": ["ContosoConnectorDefinition", "VendorSecurityConnectorDefinition"]
+        },
+        "apiVersion": {
+            "type": "string",
+            "description": "API version for the connector definition",
+            "enum": ["2022-09-01-preview", "2023-02-01", "2025-07-01-preview", "2025-09-01"],
+            "default": "2025-09-01"
+        },
+        "etag": {
+            "type": "string",
+            "description": "Etag of the azure resource"
+        },
+        "type": {
+            "type": "string",
+            "description": "The resource type",
+            "const": "Microsoft.SecurityInsights/dataConnectorDefinitions"
+        },
+        "location": {
+            "type": "string",
+            "description": "Azure region location for the connector definition resource.",
+            "default": "{{location}}"
+        },
+        "kind": {
+            "type": "string",
+            "description": "The kind of data connector for CCF (Codeless Connector Framework).",
+            "const": "Customizable"
+        },
+        "availability": {
+            "$ref": "#/definitions/availability"
+        },
+        "properties": {
+            "type": "object",
+            "required": ["connectorUiConfig"],
+            "additionalProperties": false,
+            "properties": {
+                "connectionsConfig": {
+                    "type": "object",
+                    "description": "Template specification configuration for ARM templates that can be created by the connector",
+                    "additionalProperties": false,
+                    "properties": {
+                        "templateSpecName": {
+                            "type": "string",
+                            "description": "The template name. Usually the dataConnectors ARM templates."
+                        },
+                        "templateSpecVersion": {
+                            "type": "string",
+                            "description": "The template version"
+                        }
+                    },
+                    "required": ["templateSpecName", "templateSpecVersion"]
+                },
+                "connectorUiConfig": {
+                    "$ref": "#/definitions/connectorUiConfig"
+                },
+                "createdTimeUtc": {
+                    "type": "string",
+                    "description": "Connector definition created date in UTC format"
+                },
+                "lastModifiedUtc": {
+                    "type": "string",
+                    "description": "Connector definition last modified date in UTC format"
+                }
+            }
+        }
+    },
+    "definitions": {
+        "availability": {
+            "type": "object",
+            "description": "Optional availability configuration indicating the connector's release status.",
+            "additionalProperties": false,
+            "properties": {
+                "isPreview": {
+                    "type": "boolean",
+                    "description": "Indicates whether the connector is in preview status.",
+                    "examples": ["true", "false"]
+                },
+                "status": {
+                    "type": "integer",
+                    "description": "Numeric status code indicating connector availability.",
+                    "examples": ["1"]
+                }
+            }
+        },
+        "connectorUiConfig": {
+            "type": "object",
+            "required": [
+                "id",
+                "title",
+                "publisher",
+                "descriptionMarkdown",
+                "graphQueries",
+                "connectivityCriteria",
+                "permissions",
+                "instructionSteps"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "Unique identifier for the connector UI"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Display title in the data connectors gallery"
+                },
+                "logo": {
+                    "type": "string",
+                    "description": "Connector logo in SVG format to be used when displaying the connector within Azure Sentinel's connector gallery"
+                },
+                "publisher": {
+                    "type": "string",
+                    "description": "Publisher name (vendor or organization)"
+                },
+                "descriptionMarkdown": {
+                    "type": "string",
+                    "description": "Markdown-formatted description of the connector"
+                },
+                "graphQueriesTableName": {
+                    "type": "string",
+                    "description": "Table name template used in graph queries ({{graphQueriesTableName}} placeholder)"
+                },
+                "graphQueries": {
+                    "type": "array",
+                    "description": "Queries for displaying connector metrics",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/graphQuery"
+                    }
+                },
+                "sampleQueries": {
+                    "type": "array",
+                    "description": "Sample queries to help users explore data",
+                    "items": {
+                        "$ref": "#/definitions/sampleQuery"
+                    }
+                },
+                "dataTypes": {
+                    "type": "array",
+                    "description": "Data types for health monitoring",
+                    "items": {
+                        "$ref": "#/definitions/dataType"
+                    }
+                },
+                "connectivityCriteria": {
+                    "type": "array",
+                    "description": "Criteria for determining connector health",
+                    "minItems": 1,
+                    "items": {
+                        "$ref": "#/definitions/connectivityCriteria"
+                    }
+                },
+                "availability": {
+                    "$ref": "#/definitions/availability"
+                },
+                "permissions": {
+                    "$ref": "#/definitions/permissions"
+                },
+                "instructionSteps": {
+                    "type": "array",
+                    "description": "Step-by-step configuration instructions",
+                    "items": {
+                        "$ref": "#/definitions/instructionStep"
+                    }
+                },
+                "isConnectivityCriteriasMatchSome": {
+                    "type": "boolean",
+                    "description": "Whether to match any (true) or all (false) connectivity criteria"
+                }
+            }
+        },
+        "graphQuery": {
+            "type": "object",
+            "required": ["metricName", "legend", "baseQuery"],
+            "additionalProperties": false,
+            "properties": {
+                "metricName": {
+                    "type": "string",
+                    "description": "Name of the metric (chart title)"
+                },
+                "legend": {
+                    "type": "string",
+                    "description": "Legend label for the data series"
+                },
+                "baseQuery": {
+                    "type": "string",
+                    "description": "KQL query for the metric"
+                }
+            }
+        },
+        "sampleQuery": {
+            "type": "object",
+            "required": ["description", "query"],
+            "additionalProperties": false,
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "description": "Explanation of what the query does"
+                },
+                "query": {
+                    "type": "string",
+                    "description": "KQL query users can run"
+                }
+            }
+        },
+        "dataType": {
+            "type": "object",
+            "required": ["name", "lastDataReceivedQuery"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Data type name (typically table name)"
+                },
+                "lastDataReceivedQuery": {
+                    "type": "string",
+                    "description": "KQL query to check when data was last received"
+                }
+            }
+        },
+        "connectivityCriteria": {
+            "type": "object",
+            "required": ["type"],
+            "additionalProperties": false,
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["HasDataConnectors", "IsConnectedQuery"],
+                    "description": "Type of connectivity criterion"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Queries for checking connectivity (used with IsConnectedQuery type)",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "permissions": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "resourceProvider": {
+                    "type": "array",
+                    "description": "Azure resource provider permissions",
+                    "items": {
+                        "$ref": "#/definitions/resourceProviderPermission"
+                    }
+                },
+                "customs": {
+                    "type": "array",
+                    "description": "Custom permissions or external service requirements",
+                    "items": {
+                        "$ref": "#/definitions/customPermission"
+                    }
+                },
+                "tenant": {
+                    "type": "array",
+                    "description": "Tenant-level permissions",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "licenses": {
+                    "type": "array",
+                    "description": "License requirements",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "resourceProviderPermission": {
+            "type": "object",
+            "required": ["provider", "permissionsDisplayText", "providerDisplayName", "scope", "requiredPermissions"],
+            "additionalProperties": false,
+            "properties": {
+                "provider": {
+                    "type": "string",
+                    "description": "Azure resource provider (e.g., Microsoft.OperationalInsights/workspaces)"
+                },
+                "permissionsDisplayText": {
+                    "type": "string",
+                    "description": "Human-readable description of permissions"
+                },
+                "providerDisplayName": {
+                    "type": "string",
+                    "description": "Display name for the resource provider"
+                },
+                "scope": {
+                    "type": "string",
+                    "enum": ["Workspace", "ResourceGroup", "Subscription"]
+                },
+                "requiredPermissions": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "write": { "type": "boolean" },
+                        "read": { "type": "boolean" },
+                        "delete": { "type": "boolean" },
+                        "action": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "customPermission": {
+            "type": "object",
+            "required": ["name", "description"],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Name of the custom permission"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Detailed description of the requirement"
+                }
+            }
+        },
+        "instructionStep": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Optional title for the step"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Optional description for the step"
+                },
+                "instructions": {
+                    "type": "array",
+                    "description": "List of instruction elements",
+                    "items": {
+                        "$ref": "#/definitions/instruction"
+                    }
+                },
+                "innerSteps": {
+                    "type": "array",
+                    "description": "Optional nested instruction steps",
+                    "items": {
+                        "$ref": "#/definitions/instructionStep"
+                    }
+                }
+            }
+        },
+        "instruction": {
+            "oneOf": [
+                { "$ref": "#/definitions/textboxInstruction" },
+                { "$ref": "#/definitions/markdownInstruction" },
+                { "$ref": "#/definitions/connectionToggleButtonInstruction" },
+                { "$ref": "#/definitions/oauthFormInstruction" },
+                { "$ref": "#/definitions/copyableLabelInstruction" },
+                { "$ref": "#/definitions/infoMessageInstruction" },
+                { "$ref": "#/definitions/instructionStepsGroupInstruction" },
+                { "$ref": "#/definitions/installAgentInstruction" },
+                { "$ref": "#/definitions/servicePrincipalInstruction" },
+                { "$ref": "#/definitions/dropdownInstruction" },
+                { "$ref": "#/definitions/buttonInstruction" },
+                { "$ref": "#/definitions/markdownEnvInstruction" },
+                { "$ref": "#/definitions/dataConnectorGridInstruction" },
+                { "$ref": "#/definitions/msgAssetTypeInstruction" },
+                { "$ref": "#/definitions/contextPaneInstruction" },
+                { "$ref": "#/definitions/deployPushConnectorButtonInstruction" }
+            ]
+        },
+        "textboxInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "Textbox" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["label", "placeholder", "name"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": { "type": "string" },
+                        "placeholder": { "type": "string" },
+                        "type": {
+                            "type": "string",
+                            "enum": ["text", "password", "number", "email", "url"],
+                            "default": "text"
+                        },
+                        "name": { "type": "string" },
+                        "validations": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "required": { "type": "boolean" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "markdownInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "Markdown" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["content"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "content": { "type": "string" }
+                    }
+                }
+            }
+        },
+        "connectionToggleButtonInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "ConnectionToggleButton" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["name"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "connectLabel": { "type": "string" },
+                        "disconnectLabel": { "type": "string" },
+                        "name": { "type": "string" },
+                        "label": { "type": "string" }
+                    }
+                }
+            }
+        },
+        "oauthFormInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "OAuthForm" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["clientIdLabel", "clientSecretLabel"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "clientIdLabel": { "type": "string" },
+                        "clientSecretLabel": { "type": "string" },
+                        "clientIdPlaceholder": { "type": "string" },
+                        "clientSecretPlaceholder": { "type": "string" },
+                        "connectButtonLabel": { "type": "string" },
+                        "disconnectButtonLabel": { "type": "string" },
+                        "isMultiRule": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "copyableLabelInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "CopyableLabel" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["label", "value", "fillWith"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": { "type": "string" },
+                        "value": { "type": "string" },
+                        "fillWith": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [
+                                    "workspaceId",
+                                    "workspaceName",
+                                    "primaryKey",
+                                    "microsoftAwsAccount",
+                                    "subscriptionId",
+                                    "TenantId",
+                                    "ApplicationId",
+                                    "ApplicationSecret",
+                                    "DataCollectionEndpoint",
+                                    "DataCollectionRuleId"
+                                ]
+                            }
+                        },
+                        "rows": { "type": "integer" },
+                        "wideLabel": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "infoMessageInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "InfoMessage" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["text"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "text": { "type": "string" },
+                        "visible": { "type": "boolean" },
+                        "inline": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "instructionStepsGroupInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "InstructionStepsGroup" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["title", "instructionSteps"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "title": { "type": "string" },
+                        "description": { "type": "string" },
+                        "canCollapseAllSections": { "type": "boolean" },
+                        "noFxPadding": { "type": "boolean" },
+                        "expanded": { "type": "boolean" },
+                        "instructionSteps": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/instructionStep"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "installAgentInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "InstallAgent" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["linkType"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "linkType": {
+                            "type": "string",
+                            "enum": [
+                                "InstallAgentOnWindowsVirtualMachine",
+                                "InstallAgentOnWindowsNonAzure",
+                                "InstallAgentOnLinuxVirtualMachine",
+                                "InstallAgentOnLinuxNonAzure",
+                                "OpenSyslogSettings",
+                                "OpenCustomLogsSettings",
+                                "OpenWaf",
+                                "OpenAzureFirewall",
+                                "OpenMicrosoftAzureMonitoring",
+                                "OpenFrontDoors",
+                                "OpenCdnProfile",
+                                "AutomaticDeploymentCEF",
+                                "OpenAzureInformationProtection",
+                                "OpenAzureActivityLog",
+                                "OpenIotPricingModel",
+                                "OpenPolicyAssignment",
+                                "OpenAllAssignmentsBlade",
+                                "OpenCreateDataCollectionRule"
+                            ]
+                        },
+                        "policyDefinitionGuid": { "type": "string" },
+                        "assignMode": {
+                            "type": "string",
+                            "enum": ["Initiative", "Policy"]
+                        },
+                        "dataCollectionRuleType": {
+                            "type": "string",
+                            "enum": ["SecurityEvent", "ForwardEvent"]
+                        }
+                    }
+                }
+            }
+        },
+        "servicePrincipalInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "ServicePrincipal" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["name", "tenantId", "appId"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": { "type": "string" },
+                        "tenantId": { "type": "string" },
+                        "appId": { "type": "string" },
+                        "label": { "type": "string" },
+                        "description": { "type": "string" },
+                        "disabled": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "dropdownInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "Dropdown" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["label", "name"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": { "type": "string" },
+                        "name": { "type": "string" },
+                        "options": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["key", "text"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "key": { "type": "string" },
+                                    "text": { "type": "string" }
+                                }
+                            }
+                        },
+                        "placeholder": { "type": "string" },
+                        "isMultiSelect": { "type": "boolean" },
+                        "defaultAllSelected": { "type": "boolean" },
+                        "required": { "type": "boolean" },
+                        "disabled": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "buttonInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "Button" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["label", "name"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": { "type": "string" },
+                        "name": { "type": "string" },
+                        "isPrimary": { "type": "boolean" },
+                        "disabled": { "type": "boolean" }
+                    }
+                }
+            }
+        },
+        "markdownEnvInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "MarkdownEnv" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["prodScript", "govScript"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "prodScript": { "type": "string" },
+                        "govScript": { "type": "string" }
+                    }
+                }
+            }
+        },
+        "dataConnectorGridInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "DataConnectorGrid" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["mapping"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "mapping": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": ["columnName", "columnValue"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "columnName": { "type": "string" },
+                                    "columnValue": { "type": "string" },
+                                    "flexGrow": { "type": "integer" },
+                                    "maxWidth": { "type": "integer" }
+                                }
+                            }
+                        },
+                        "menuItems": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": ["DeleteConnector", "DeleteDcr", "EditDcr", "DeleteStaticConnector"]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "msgAssetTypeInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "MSGAssetType" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["items", "type"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "description": { "type": "string" },
+                        "items": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                                "type": "object",
+                                "required": ["label"],
+                                "additionalProperties": false,
+                                "properties": {
+                                    "label": { "type": "string" }
+                                }
+                            }
+                        },
+                        "type": {
+                            "type": "string",
+                            "enum": ["AzureResourceGraph", "M365Assets"]
+                        }
+                    }
+                }
+            }
+        },
+        "contextPaneInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "ContextPane" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["label", "title", "instructionSteps"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "isPrimary": { "type": "boolean" },
+                        "label": { "type": "string" },
+                        "title": { "type": "string" },
+                        "subtitle": { "type": "string" },
+                        "contextPaneType": {
+                            "type": "string",
+                            "default": "DataConnectorsContextPane"
+                        },
+                        "instructionSteps": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/instructionStep"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "deployPushConnectorButtonInstruction": {
+            "type": "object",
+            "required": ["type", "parameters"],
+            "additionalProperties": false,
+            "properties": {
+                "type": { "const": "DeployPushConnectorButton" },
+                "parameters": {
+                    "type": "object",
+                    "required": ["applicationDisplayName"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "label": {
+                            "type": "string",
+                            "default": "Deploy Push Connector"
+                        },
+                        "applicationDisplayName": {
+                            "type": "string",
+                            "description": "Display name for the Entra application that will be automatically created for OAuth 2.0 authentication"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
