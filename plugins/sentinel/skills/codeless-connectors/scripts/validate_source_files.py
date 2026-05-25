@@ -315,33 +315,85 @@ def run_schema_validation(
     schema: dict,
     file_label: str,
 ) -> list[CheckResult]:
-    """Validate content against schema. For arrays, validate each element."""
+    """Validate content against schema. For arrays, validate each element and
+    DEDUPLICATE identical errors that recur across elements (otherwise a single
+    defect repeated in N array elements produces N copies of the same message)."""
     results = []
     validator = Draft7Validator(schema)
 
     items = content if isinstance(content, list) else [content]
     multi = isinstance(content, list) and len(items) > 1
 
-    for idx, item in enumerate(items):
-        errors = sorted(validator.iter_errors(item), key=lambda e: list(e.path))
-        suffix = f" [array element {idx}]" if multi else ""
+    if not multi:
+        # Single object: report errors directly.
+        errors = sorted(validator.iter_errors(items[0]), key=lambda e: list(e.path))
         if not errors:
             results.append(CheckResult(
-                f"JSON Schema valid{suffix}",
-                True,
-                file_label=file_label,
+                "JSON Schema valid", True, file_label=file_label,
             ))
-            continue
+            return results
         for err in errors:
             path = ".".join(str(p) for p in err.absolute_path) or "(root)"
             msg = _explain_oneOf(err) if err.validator == "oneOf" else err.message
             results.append(CheckResult(
-                f"JSON Schema valid{suffix}",
-                False,
-                msg,
-                file_label=file_label,
-                property_path=path,
+                "JSON Schema valid", False, msg,
+                file_label=file_label, property_path=path,
             ))
+        return results
+
+    # Array: dedupe identical errors across elements. The "identity" of an
+    # error is (relative-path-with-element-index-stripped, message). Track
+    # which array element indices each unique error appeared in.
+    aggregated: dict[tuple, dict] = {}
+    clean_indices = []
+    for idx, item in enumerate(items):
+        errors = sorted(validator.iter_errors(item), key=lambda e: list(e.path))
+        if not errors:
+            clean_indices.append(idx)
+            continue
+        for err in errors:
+            # Strip the leading element index from the absolute path so the
+            # same error in different elements normalizes to the same key.
+            path_parts = list(err.absolute_path)
+            rel_path = ".".join(str(p) for p in path_parts) or "(root)"
+            msg = _explain_oneOf(err) if err.validator == "oneOf" else err.message
+            key = (rel_path, msg)
+            agg = aggregated.setdefault(key, {
+                "indices": [], "path": rel_path, "message": msg,
+            })
+            agg["indices"].append(idx)
+
+    if clean_indices:
+        if len(clean_indices) == len(items):
+            results.append(CheckResult(
+                "JSON Schema valid",
+                True,
+                f"All {len(items)} array elements valid",
+                file_label=file_label,
+            ))
+        else:
+            results.append(CheckResult(
+                "JSON Schema valid",
+                True,
+                f"{len(clean_indices)} of {len(items)} array elements valid: {clean_indices}",
+                file_label=file_label,
+            ))
+
+    for agg in aggregated.values():
+        indices = agg["indices"]
+        if len(indices) == len(items):
+            suffix = f" (all {len(items)} array elements)"
+        elif len(indices) > 1:
+            suffix = f" (array elements {indices})"
+        else:
+            suffix = f" (array element {indices[0]})"
+        results.append(CheckResult(
+            "JSON Schema valid",
+            False,
+            agg["message"] + suffix,
+            file_label=file_label,
+            property_path=agg["path"],
+        ))
     return results
 
 
@@ -351,6 +403,30 @@ def run_schema_validation(
 
 def _polling_elements(content: Union[dict, list]) -> list[dict]:
     return content if isinstance(content, list) else [content]
+
+
+def _first_dict(content: Union[dict, list, None]) -> Optional[dict]:
+    """Return the first dict from content (which may be a single dict, a list
+    of dicts, or None). DCR and connector_definition files are normally single
+    objects but some production connectors wrap them in arrays — this lets
+    domain and cross-file checks work in both cases."""
+    if isinstance(content, dict):
+        return content
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, dict):
+                return item
+    return None
+
+
+def _dict_elements(content: Union[dict, list, None]) -> list[dict]:
+    """Return all dict elements from content. For DCR/connector_definition
+    files wrapped as arrays, we want to run domain checks on every element."""
+    if isinstance(content, dict):
+        return [content]
+    if isinstance(content, list):
+        return [item for item in content if isinstance(item, dict)]
+    return []
 
 
 def check_polling_domain(content: Union[dict, list], file_label: str) -> list[CheckResult]:
@@ -753,13 +829,18 @@ def check_connector_definition_domain(content: dict, file_label: str) -> list[Ch
 # ---------------------------------------------------------------------------
 
 PLACEHOLDER_RE = re.compile(r"\{\{(\w+)\}\}")
+# Matches ARM-style references that authors use to wrap source files for direct
+# ARM deployment: [parameters('name')] or [[parameters('name')]
+ARM_PARAM_RE = re.compile(r"\[\[?parameters\('(\w+)'\)")
 
 
 def _collect_placeholders(value) -> set[str]:
-    """Recursively scan a JSON-like value for {{name}} placeholders."""
+    """Recursively scan a JSON-like value for {{name}} placeholders AND
+    [[parameters('name')] ARM references. Both bind to UI Textbox names."""
     found = set()
     if isinstance(value, str):
         found.update(PLACEHOLDER_RE.findall(value))
+        found.update(ARM_PARAM_RE.findall(value))
     elif isinstance(value, dict):
         for v in value.values():
             found |= _collect_placeholders(v)
@@ -767,6 +848,19 @@ def _collect_placeholders(value) -> set[str]:
         for v in value:
             found |= _collect_placeholders(v)
     return found
+
+
+def _has_arm_param_references(value) -> bool:
+    """True if the value contains any ARM-style [[parameters('X')] references.
+    Used to decide whether Textbox-binding cross-checks make sense — when a file
+    binds via ARM, the {{}}<->Textbox-name relationship is bypassed."""
+    if isinstance(value, str):
+        return bool(ARM_PARAM_RE.search(value))
+    if isinstance(value, dict):
+        return any(_has_arm_param_references(v) for v in value.values())
+    if isinstance(value, list):
+        return any(_has_arm_param_references(v) for v in value)
+    return False
 
 
 def _collect_textbox_names(steps: list) -> set[str]:
@@ -783,14 +877,27 @@ def _collect_textbox_names(steps: list) -> set[str]:
     return names
 
 
-# Placeholders satisfied by other sources (not Textbox inputs):
+# Placeholders satisfied by other sources (not Textbox inputs). These names
+# appear in polling/push source files but are filled at deploy/runtime by ARM,
+# Sentinel, or the OAuth flow -- not by user input in a Textbox.
 IMPLICIT_PLACEHOLDERS = {
-    # Auto-injected by Sentinel runtime
-    "dataCollectionEndpoint",
-    "dataCollectionRuleImmutableId",
+    # ARM workspace context
     "location",
     "workspace-location",
-    # OAuth2 grant code is injected during OAuth flow
+    "workspace-id",
+    "workspaceName",
+    "subscriptionId",
+    "tenantId",
+    "resourceGroupName",
+    # Runtime CCF parameter objects (referenced as
+    # `[parameters('X').sub-field]` -- X itself is auto-injected, never a Textbox)
+    "auth",
+    "dcrConfig",
+    "dataCollectionEndpoint",
+    "dataCollectionRuleImmutableId",
+    "connectorVersion",
+    "solutionVersion",
+    # OAuth2 authorization-code injected during the OAuth flow
     "code",
 }
 
@@ -815,23 +922,27 @@ def cross_file_checks(by_kind: dict[str, list[tuple[Path, Union[dict, list]]]]) 
 
     polling_elements = _polling_elements(polling_entry[1]) if polling_entry else []
 
-    # 1. polling.dcrConfig.streamName must match dcr.streamDeclarations keys
+    # 1. polling.dcrConfig.streamName must match dcr.streamDeclarations keys.
+    #    DCR may be a single object OR an array of DCR resources; union the
+    #    streamDeclarations across all elements so multi-DCR connectors validate.
     if polling_entry and dcr_entry:
-        dcr_content = dcr_entry[1]
-        if isinstance(dcr_content, dict):
-            stream_decls = (dcr_content.get("properties", {}) or {}).get("streamDeclarations", {}) or {}
-            for idx, element in enumerate(polling_elements):
-                stream_name = (element.get("properties", {}) or {}).get("dcrConfig", {}).get("streamName")
-                if not stream_name:
-                    continue
-                if stream_name not in stream_decls:
-                    results.append(CheckResult(
-                        f"polling.dcrConfig.streamName has matching DCR streamDeclaration",
-                        False,
-                        f"Polling element {idx} declares streamName {stream_name!r} "
-                        f"but DCR streamDeclarations only has: {sorted(stream_decls.keys())}",
-                        file_label=f"{polling_label} <-> {dcr_label}",
-                    ))
+        stream_decls = {}
+        for dcr_elem in _dict_elements(dcr_entry[1]):
+            stream_decls.update(
+                (dcr_elem.get("properties", {}) or {}).get("streamDeclarations", {}) or {}
+            )
+        for idx, element in enumerate(polling_elements):
+            stream_name = (element.get("properties", {}) or {}).get("dcrConfig", {}).get("streamName")
+            if not stream_name:
+                continue
+            if stream_name not in stream_decls:
+                results.append(CheckResult(
+                    f"polling.dcrConfig.streamName has matching DCR streamDeclaration",
+                    False,
+                    f"Polling element {idx} declares streamName {stream_name!r} "
+                    f"but DCR streamDeclarations only has: {sorted(stream_decls.keys())}",
+                    file_label=f"{polling_label} <-> {dcr_label}",
+                ))
 
     # 2. polling.dataType matches at least one table name (across all table files)
     if polling_entry and table_entries:
@@ -857,8 +968,8 @@ def cross_file_checks(by_kind: dict[str, list[tuple[Path, Union[dict, list]]]]) 
 
     # 3. polling.connectorDefinitionName matches connector_definition.name
     if polling_entry and cd_entry:
-        cd_content = cd_entry[1]
-        if isinstance(cd_content, dict):
+        cd_content = _first_dict(cd_entry[1])
+        if cd_content is not None:
             cd_name = cd_content.get("name")
             seen_cdnames = set()
             for idx, element in enumerate(polling_elements):
@@ -886,8 +997,8 @@ def cross_file_checks(by_kind: dict[str, list[tuple[Path, Union[dict, list]]]]) 
 
     # 4. instructionSteps Textbox names cover polling {{placeholders}}
     if polling_entry and cd_entry:
-        cd_content = cd_entry[1]
-        if isinstance(cd_content, dict):
+        cd_content = _first_dict(cd_entry[1])
+        if cd_content is not None:
             ui = (cd_content.get("properties", {}) or {}).get("connectorUiConfig", {}) or {}
             steps = ui.get("instructionSteps", []) or []
             textbox_names = _collect_textbox_names(steps)
@@ -903,8 +1014,12 @@ def cross_file_checks(by_kind: dict[str, list[tuple[Path, Union[dict, list]]]]) 
                     f"Add a Textbox with name=<placeholder> + validations.required:true.",
                     file_label=f"{polling_label} <-> {cd_entry[0].name}",
                 ))
+            # Skip the "extras" warning when the polling file uses ARM-style
+            # parameter references — the binding goes via ARM, not Textbox name,
+            # so any unreferenced Textbox in the placeholder set is a false alarm.
+            uses_arm_binding = any(_has_arm_param_references(el) for el in polling_elements)
             extras = textbox_names - placeholders - {"clientId", "clientSecret"}
-            if extras:
+            if extras and not uses_arm_binding:
                 results.append(CheckResult(
                     "All Textbox names are referenced by polling config",
                     True,
@@ -998,10 +1113,12 @@ def main() -> int:
                 all_results.extend(check_push_domain(content, label))
             elif kind == "table":
                 all_results.extend(check_table_domain(content, label))
-            elif kind == "dcr" and isinstance(content, dict):
-                all_results.extend(check_dcr_domain(content, label))
-            elif kind == "connector_definition" and isinstance(content, dict):
-                all_results.extend(check_connector_definition_domain(content, label))
+            elif kind == "dcr":
+                for elem in _dict_elements(content):
+                    all_results.extend(check_dcr_domain(elem, label))
+            elif kind == "connector_definition":
+                for elem in _dict_elements(content):
+                    all_results.extend(check_connector_definition_domain(elem, label))
 
     # Cross-file checks
     populated_kinds = [k for k, v in by_kind.items() if v]

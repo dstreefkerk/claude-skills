@@ -476,7 +476,7 @@
                 "type": { "const": "CopyableLabel" },
                 "parameters": {
                     "type": "object",
-                    "required": ["label", "value", "fillWith"],
+                    "required": ["label"],
                     "additionalProperties": false,
                     "properties": {
                         "label": { "type": "string" },
@@ -499,9 +499,14 @@
                                 ]
                             }
                         },
+                        "placeholder": { "type": "string" },
                         "rows": { "type": "integer" },
                         "wideLabel": { "type": "boolean" }
-                    }
+                    },
+                    "anyOf": [
+                        { "required": ["value"] },
+                        { "required": ["fillWith"] }
+                    ]
                 }
             }
         },
@@ -692,7 +697,7 @@
             "required": ["type", "parameters"],
             "additionalProperties": false,
             "properties": {
-                "type": { "const": "DataConnectorGrid" },
+                "type": { "const": "DataConnectorsGrid" },
                 "parameters": {
                     "type": "object",
                     "required": ["mapping"],
