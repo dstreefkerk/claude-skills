@@ -99,7 +99,6 @@
         "connectorUiConfig": {
             "type": "object",
             "required": [
-                "id",
                 "title",
                 "publisher",
                 "descriptionMarkdown",
@@ -441,7 +440,9 @@
                         "connectLabel": { "type": "string" },
                         "disconnectLabel": { "type": "string" },
                         "name": { "type": "string" },
-                        "label": { "type": "string" }
+                        "label": { "type": "string" },
+                        "disabled": { "type": "boolean" },
+                        "isPrimary": { "type": "boolean" }
                     }
                 }
             }
@@ -490,6 +491,7 @@
                                     "workspaceName",
                                     "primaryKey",
                                     "microsoftAwsAccount",
+                                    "MicrosoftAwsAccount",
                                     "subscriptionId",
                                     "TenantId",
                                     "ApplicationId",
@@ -630,7 +632,7 @@
                 "type": { "const": "Dropdown" },
                 "parameters": {
                     "type": "object",
-                    "required": ["label", "name"],
+                    "required": ["label", "name", "options"],
                     "additionalProperties": false,
                     "properties": {
                         "label": { "type": "string" },
@@ -769,7 +771,7 @@
                 "type": { "const": "ContextPane" },
                 "parameters": {
                     "type": "object",
-                    "required": ["label", "title", "instructionSteps"],
+                    "required": ["title", "subtitle", "contextPaneType", "instructionSteps"],
                     "additionalProperties": false,
                     "properties": {
                         "isPrimary": { "type": "boolean" },

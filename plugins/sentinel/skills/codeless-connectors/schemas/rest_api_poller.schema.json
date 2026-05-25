@@ -201,8 +201,12 @@
         },
         "jwtAuth": {
             "type": "object",
-            "required": ["type", "userName", "password", "TokenEndpoint"],
+            "required": ["type", "TokenEndpoint"],
             "additionalProperties": false,
+            "oneOf": [
+                { "required": ["userName", "password"] },
+                { "required": ["UserToken"] }
+            ],
             "properties": {
                 "type": {
                     "const": "JwtToken",
@@ -330,6 +334,12 @@
                     "exclusiveMinimum": 0,
                     "description": "Rate limit in queries per second"
                 },
+                "paginatedCallsPerSecond": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000,
+                    "description": "Throttle for paginated requests (calls/sec). 0 means no pagination throttling. Typically set equal to rateLimitQPS."
+                },
                 "rateLimitConfig": { "$ref": "#/definitions/rateLimitConfig" },
                 "queryWindowInMin": {
                     "type": "integer",
@@ -376,7 +386,11 @@
                 "QueryTimeIntervalAttributeName": { "type": "string" },
                 "QueryTimeIntervalPrepend": { "type": "string" },
                 "QueryTimeIntervalDelimiter": { "type": "string" },
-                "queryParametersTemplate": { "type": "string" }
+                "queryParametersTemplate": { "type": "string" },
+                "initialCheckpointTimeUtc": {
+                    "type": "string",
+                    "description": "ISO 8601 UTC datetime for the very first poll when no checkpoint exists. Ignored once a checkpoint is persisted. Only effective when the request defines a start-time parameter without a corresponding end-time."
+                }
             }
         },
         "responseConfig": {
@@ -689,7 +703,7 @@
         },
         "countBasedPaging": {
             "type": "object",
-            "required": ["pagingType"],
+            "required": ["pagingType", "pageNumberParaName"],
             "additionalProperties": false,
             "properties": {
                 "pagingType": { "const": "CountBasedPaging" },
