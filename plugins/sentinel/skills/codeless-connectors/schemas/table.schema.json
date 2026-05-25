@@ -23,8 +23,8 @@
         "apiVersion": {
             "type": "string",
             "description": "The API version for the Log Analytics Tables REST API",
-            "enum": ["2021-03-01-privatepreview", "2021-12-01-preview", "2022-10-01", "2023-09-01", "2025-02-01"],
-            "default": "2025-02-01"
+            "enum": ["2021-03-01-privatepreview", "2021-12-01-preview", "2022-10-01", "2023-09-01", "2025-02-01", "2025-07-01"],
+            "default": "2025-07-01"
         },
         "location": {
             "type": "string",

@@ -326,8 +326,9 @@
                 },
                 "httpMethod": {
                     "type": "string",
-                    "enum": ["GET", "POST"],
-                    "default": "GET"
+                    "enum": ["GET", "POST", "Get", "Post"],
+                    "default": "GET",
+                    "description": "HTTP method. MS Learn's conn-rules-reference documents 'GET (default) or POST' but code examples use mixed casing ('Get', 'Post'), so the schema accepts both. Canonical form is uppercase."
                 },
                 "rateLimitQPS": {
                     "type": "number",
@@ -342,11 +343,13 @@
                 },
                 "rateLimitConfig": { "$ref": "#/definitions/rateLimitConfig" },
                 "queryWindowInMin": {
-                    "type": "integer",
-                    "minimum": 1,
                     "default": 5,
-                    "description": "Polling frequency in minutes, determining how often the connector queries the API and the time window for each query",
-                    "examples": ["1", "5", "15", "60"]
+                    "description": "Polling frequency in minutes. MS Learn documents this as Integer (the canonical form). Production connectors (Workday, ZeroFoxAlerts) bind this to a user-configurable Dropdown via an ARM expression string like '[[int(parameters('queryWindow')[0])]', so the schema also accepts ARM-expression strings for that pattern. Prefer the integer form unless you genuinely need user-configurable polling.",
+                    "oneOf": [
+                        { "type": "integer", "minimum": 1 },
+                        { "type": "string", "pattern": "^\\[\\[?.*\\]$" }
+                    ],
+                    "examples": [1, 5, 15, 60, "[[int(parameters('queryWindow')[0])]"]
                 },
                 "queryWindowDelayInMin": {
                     "type": "integer",

@@ -130,3 +130,18 @@ After running the packager:
 - Verify `_solutionVersion` in the generated template matches the manifest version
 - Spot-check bracket escaping: `[[` in nested templates, single `[` at parent level
 - Confirm the dependency chain: all resources `dependsOn` the contentPackages resource
+
+## Submitting the PR to Azure-Sentinel
+
+Two things the upstream reviewers ask for that the packaging output alone doesn't provide:
+
+1. **Working-connector screenshots in the PR body.** The Sentinel reviewers (e.g. `@v-maheshbh` and other `v-*` MS contractors) routinely comment "Kindly attach a few CCF connector screenshots for reference" if the PR doesn't already include them. Provide at least:
+   - The connector tile in the Sentinel data connectors gallery (post-deployment).
+   - The connector's configuration / Instructions tab with credentials entered.
+   - The Connected state after a successful poll, ideally with a non-zero "Data received" graph or a sample query returning rows from the destination table.
+
+   Embed these directly in the PR description, not as linked attachments. See PR 14055 (ZeroFox) and PR 13947 (Zimperium) for the conventional layout.
+
+2. **`ReleaseNotes.md` in the solution root.** Required for every version bump. Use simple bullet points: `||` table rows from older PRs are NOT the convention — plain Markdown lists are. If reviewers ask to "remove `||` formatting", they mean to reformat to a plain list.
+
+The PR will also be reviewed by `copilot-pull-request-reviewer` for surface-level issues; address its comments before pinging a human reviewer.
