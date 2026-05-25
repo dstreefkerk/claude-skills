@@ -30,7 +30,8 @@ Detailed references are in sibling files - read them as needed:
 - `references/create-ui-definition.md`  -- createUiDefinition.json builder guide for Azure Portal deployment UI
 - `references/production-examples.md`  -- Annotated excerpts from production connectors (Cisco Meraki, 1Password, Auth0, Azure DevOps, Box, Jira, Proofpoint TAP, BigID)
 - `scripts/validate_source_files.py`  -- Source-file validator (jsonschema + domain rules + cross-file consistency). Run during authoring against the building-block JSON files BEFORE packaging. Catches schema violations, OAuth2 conditional requirements, the `{{apiKey}}` literal-placeholder rule, reserved table prefixes, catchall/envelope/reserved column names, instructionSteps UX traps, and cross-file mismatches (streamName, dataType, connectorDefinitionName, Textbox-to-placeholder binding). Auto-detects file kinds; supports `--folder` for whole-connector validation. Requires `jsonschema` (`pip install jsonschema`).
-- `scripts/validate_connector.py`  -- Automated validation script for the wrapped ARM template (run AFTER packaging with `createSolutionV3.ps1`). Complementary to `validate_source_files.py` — catches ARM-level issues (bracket escaping, dependency chains, top-level table existence) that source-file validation can't see.
+- `scripts/validate_connector.py`  -- Custom validator for the wrapped ARM template (run AFTER packaging with `createSolutionV3.ps1`). Complementary to `validate_source_files.py` — catches CCF-specific ARM-level issues (bracket escaping, dependency chains, top-level table existence, contentProductId prefixes) that source-file validation can't see.
+- `scripts/run-arm-ttk.ps1`  -- Microsoft's ARM Template Test Toolkit runner, mirroring the CI workflow Microsoft itself uses to gate Content Hub submissions. Run AFTER packaging on `Package/mainTemplate.json` and `Package/createUiDefinition.json`. Catches generic ARM correctness issues (unused parameters, secrets in plain text, resource ID construction, apiVersion recency, etc.). Auto-clones arm-ttk on first run. Requires PowerShell 7+ and git. This is the official Microsoft deployment gate — skip at your peril.
 - `scripts/test-ccp-mapping.ps1`  -- Tests Definition->Poller->DCR->Table mapping via get-ccp-details.ps1 (run against extracted separate files)
 - `references/packaging.md`  -- Solution packaging with createSolutionV3.ps1, building block file structure, naming conventions
 - `references/ccf-packaging-details.md`  -- CCF packaging: folder naming, file suffixes, cross-file mapping, multi-poller patterns, connector kind specifics
@@ -349,6 +350,35 @@ across these phases for a reason.
 the next phase. Cascading errors from a bad polling config into a hand-edited DCR are the
 single biggest source of "Connect button hangs" deployments.
 
+## Three-Layer Validation Pipeline
+
+Use all three scripts -- they catch genuinely different classes of issues. Skipping any
+one of them means finding the problem later (at packaging, at deployment, or at Microsoft
+Content Hub submission).
+
+| Order | Script | Validates | Catches |
+|-------|--------|-----------|---------|
+| 1 | `scripts/validate_source_files.py` | The four CCF source files, pre-packaging | Schema shape, OAuth2 conditional fields, `{{apiKey}}` literal rule, reserved table prefixes, catchall/envelope/reserved column names, cross-file streamName/dataType/connectorDefinitionName binding, instructionSteps Textbox-to-placeholder binding |
+| 2 | `scripts/validate_connector.py` | The packaged `mainTemplate.json` | Bracket escaping per contentKind, dependency chains, top-level table existence, `contentProductId` prefixes, blocked KQL functions in transforms, output-stream prefix correctness |
+| 3 | `scripts/run-arm-ttk.ps1` | Wrapped `mainTemplate.json` + `createUiDefinition.json` via Microsoft's ARM-TTK | Generic ARM correctness (unused parameters, output references, secrets handling, apiVersion recency, resource ID construction) -- the official Microsoft gate before Content Hub accepts the solution |
+
+**Why all three:** The same PR (e.g. Azure-Sentinel#14216) can pass arm-ttk and still
+have CCF-specific bugs that only `validate_source_files.py` finds (CopyableLabel missing
+`value`, column name over 45 chars). Likewise, `validate_connector.py` and arm-ttk
+overlap on ARM-level checks but arm-ttk runs hundreds of generic best-practice tests
+that the custom validator doesn't. Run all three in order; the cost of running them
+locally is seconds, the cost of a Content Hub rejection is days.
+
+Typical invocation pattern:
+```
+# Pre-packaging
+python scripts/validate_source_files.py --folder path/to/connector_source
+
+# Post-packaging
+python scripts/validate_connector.py path/to/solution/Package/mainTemplate.json
+pwsh scripts/run-arm-ttk.ps1 -SolutionPath path/to/solution
+```
+
 ## Deployment Checklist
 
 ### Phase 1 — Discovery
@@ -394,6 +424,8 @@ single biggest source of "Connect button hangs" deployments.
 - [ ] Connections contentProductId uses `'rdc'` prefix
 - [ ] Connections metadata parentId references an existing resource
 - [ ] Previous deployment resources cleaned up before redeploying
+- [ ] `scripts/validate_connector.py mainTemplate.json` passes (CCF-specific ARM checks)
+- [ ] `scripts/run-arm-ttk.ps1 -SolutionPath <solution>` passes (Microsoft's official Content Hub gate; reports `ARM-TTK-SUMMARY: Pass=N Fail=0`)
 
 ## Key Microsoft Docs References
 - Create pull connector: https://learn.microsoft.com/en-us/azure/sentinel/create-codeless-connector
