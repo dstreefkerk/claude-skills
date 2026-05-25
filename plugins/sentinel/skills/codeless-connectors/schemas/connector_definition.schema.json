@@ -399,6 +399,9 @@
                             "default": "text"
                         },
                         "name": { "type": "string" },
+                        "defaultValue": {
+                            "description": "Pre-populated initial value for the textbox. Inherited from the underlying Microsoft.Common.TextBox element (learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/microsoft-common-textbox). Used by CheckPoint Cyberint, Cyfirma Vulnerabilities, VersasecCMS for polling-interval and flag-style defaults."
+                        },
                         "validations": {
                             "type": "object",
                             "additionalProperties": false,
@@ -652,6 +655,9 @@
                         "placeholder": { "type": "string" },
                         "isMultiSelect": { "type": "boolean" },
                         "defaultAllSelected": { "type": "boolean" },
+                        "defaultValue": {
+                            "description": "Pre-selected option key. Inherited from the underlying Microsoft.Common.DropDown element (learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/microsoft-common-dropdown). The createUIDefinition spec shows defaultValue as a string (or array, when multiselect); CCF connectors in production (ZeroFox TI, ZeroFoxAlerts) use the flat string form matching an options[].key value (e.g. '60' for a polling-frequency dropdown). Schema accepts string or array."
+                        },
                         "required": { "type": "boolean" },
                         "disabled": { "type": "boolean" }
                     }
