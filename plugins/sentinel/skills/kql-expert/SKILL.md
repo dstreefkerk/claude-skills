@@ -157,6 +157,7 @@ Located in `references/` folder:
 | `spl_to_kql_mapping.md` | SPL migration reference | Read directly |
 | `asim_schemas.md` | ASIM parser reference | Read directly |
 | `dcr_transformation_kql.md` | DCR transformation KQL limitations, supported operators/functions, and best practices | Read directly |
+| `graph_semantics_kql.md` | KQL graph semantics (`make-graph`/`graph-match`/`graph-shortest-paths`), variable-length edge functions, and the dot-notation deprecation | Read directly |
 
 **Important**: Never read `environments.json` directly. It's a large data file (~500KB+) designed for programmatic access via `schema_validator.py`. Use the Python script to validate schemas.
 
@@ -222,6 +223,7 @@ SigninLogs
 | Large table on left | Inefficient join | Small table left |
 | `parse` for structured strings | Fragile; breaks if schema changes | Use `extract()` or `parse_json()` |
 | PCRE lookarounds / backrefs in regex | KQL uses RE2; `(?=`, `(?!`, `(?<=`, `(?<!`, `\1` fail with `SEM0420` | Use negated character classes (`[^\[]+`) and `where not(...)` |
+| Dot-notation on variable-length edge in `graph-match` | Deprecated; `e.Prop` on a `-[e*1..5]-` edge fails / is rejected | `project`: `map(e, Prop)`; `where`: `all(e, ...)` / `any(e, ...)` |
 
 ### Contains Elimination Patterns
 
@@ -288,6 +290,37 @@ The `parse` operator is sensitive to exact string formats and breaks silently wh
 ```
 
 Verify regex grammar in a Kusto/Azure Data Explorer playground (RE2) — **not** in regex101 (PCRE).
+
+### Graph Semantics (make-graph / graph-match)
+
+KQL graph semantics (`make-graph` → `graph-match` / `graph-shortest-paths`) apply to **Microsoft Sentinel and Azure Monitor** and are commonly used for lateral-movement and attack-path detection. A **variable length edge** (`-[e*1..5]-`) matches a path of repeated edges; the matched path is a *sequence* of edges, not a single edge.
+
+**Accessing variable-length edge properties — dot-notation is deprecated.** Referencing a property of a variable-length edge with dot-notation (`e.Prop`) — including combined with operators or scalar functions — is deprecated by Microsoft. Use the graph functions instead:
+
+| Clause | Old (deprecated) | New (correct) |
+|--------|------------------|---------------|
+| `project` | `reportingPath = e.Prop` | `reportingPath = map(e, Prop)` |
+| `project` (with function) | `strcat(e.Prop, "x")` | `map(e, strcat(Prop, "x"))` |
+| `where` (all edges) | `e.Prop has "abc"` | `all(e, Prop has "abc")` |
+| `where` (any edge) | `isnotempty(e.Prop)` | `any(e, isnotempty(Prop))` |
+
+```kql
+// DEPRECATED - dot-notation on a variable-length edge
+... | graph-match (a)-[chain*1..5]-(b)
+      project hops = array_length(chain.FileName)
+
+// CORRECT - map() returns a dynamic array of the expression per edge
+... | graph-match (a)-[chain*1..5]-(b)
+      project hops = array_length(map(chain, FileName))
+```
+
+Notes:
+- Inside `map()` / `all()` / `any()`, reference the property **by name only** (`Prop`), not `edge.Prop`.
+- `map(edge, expr)` returns a `dynamic` array (one element per edge; empty for zero-length paths). To reach the **inner nodes** of a variable-length edge use `map(inner_nodes(edge), expr)`.
+- Dot-notation still works for **fixed/single edges and nodes** (e.g. `n.name`, single `-[e]->` edges) — the change is specific to *variable-length* edges.
+- This applies to the `graph-match` and `graph-shortest-paths` operators. Validate in an Azure Data Explorer / Kusto playground before deploying graph-based analytic rules.
+
+For the full graph operator set (`make-graph`, `graph-match`, `graph-shortest-paths`, `graph-to-table`, `graph-mark-components`), the `map()`/`all()`/`any()`/`inner_nodes()` functions, Sentinel/Azure Monitor vs preview vs ADX-only availability, and attack-path patterns, **read `references/graph_semantics_kql.md`**.
 
 ## Resource Thresholds
 
@@ -490,6 +523,7 @@ This skill supports detection across all MITRE tactics:
 
 | Version | Changes |
 |---------|---------|
+| 2.4.0 | Added Graph Semantics section + `graph_semantics_kql.md` reference: variable-length edge dot-notation is deprecated in `graph-match` — use `map()` in `project` and `all()`/`any()` in `where`. Covers full graph operator set, traversal functions, and Sentinel/preview/ADX-only availability. Added matching anti-pattern row |
 | 2.3.1 | Added Regex Engine Limitations (RE2) section and anti-pattern row covering PCRE lookarounds/backreferences that fail with `SEM0420` at rule-save |
 | 2.3.0 | Added DCR Transformation KQL section and `dcr_transformation_kql.md` reference covering supported operators, function allowlist, and DCR-specific restrictions |
 | 2.2.3 | Added Robust String Parsing section warning about fragile `parse` operator; recommend `extract()` or `parse_json()` |
@@ -502,5 +536,5 @@ This skill supports detection across all MITRE tactics:
 
 ---
 
-**Version**: 2.3.1
+**Version**: 2.4.0
 **Last Updated**: May 2026
