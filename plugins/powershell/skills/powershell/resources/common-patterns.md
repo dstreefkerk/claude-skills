@@ -338,6 +338,47 @@ if ([string]::IsNullOrEmpty($value)) { ... }
 if ($null -eq $value) { ... }
 ```
 
+## Safe property accessor (reusable null-safe helper)
+
+When a script reads properties off many objects of unknown or varying shape (API
+responses, KQL result rows, pipeline objects), repeating
+`if ($obj.PSObject.Properties['X']) { $obj.X }` inline everywhere is noisy and
+easy to get wrong. Define one helper and reuse it. Strict-mode-safe by design.
+
+```powershell
+function Get-SafeProperty {
+    [CmdletBinding()]
+    [OutputType([object])]
+    param (
+        [Parameter(Mandatory)]
+        [AllowNull()]
+        $InputObject,
+
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        $Default = $null
+    )
+
+    if ($null -eq $InputObject) { return $Default }
+    if ($InputObject.PSObject.Properties[$Name]) {
+        return $InputObject.PSObject.Properties[$Name].Value
+    }
+    return $Default
+}
+
+# Usage — never throws under Set-StrictMode, even if the property is absent:
+$status = Get-SafeProperty -InputObject $row -Name 'Status' -Default 'Unknown'
+$time   = Get-SafeProperty -InputObject $row -Name 'TimeGenerated'
+if ($null -eq $time) { continue }   # column genuinely absent
+```
+
+Use this for every field read off external/API/KQL data. Direct access
+(`$row.Status`) returns `$null` silently in default PowerShell but throws
+`PropertyNotFoundException` under `Set-StrictMode -Version 2+` — and you cannot
+control whether a caller has strict mode set in their profile. See
+[`traps-and-gotchas.md`](traps-and-gotchas.md) for the inline-guard equivalent.
+
 ## Regex patterns
 
 ```powershell

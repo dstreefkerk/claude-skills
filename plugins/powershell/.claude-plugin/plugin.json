@@ -1,7 +1,7 @@
 {
   "name": "powershell",
   "description": "Enterprise PowerShell coding standards and best practices.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Daniel Streefkerk"
   }

@@ -21,7 +21,7 @@ Load these when needed for detailed patterns, examples, and gotchas:
 
 | File | When to load |
 |---|---|
-| [`resources/common-patterns.md`](resources/common-patterns.md) | Need a code pattern (script skeleton, error handling, collections, splatting, regex, pipeline functions, string building, hashtable lookups, module structure, ShouldProcess+Force, etc.) |
+| [`resources/common-patterns.md`](resources/common-patterns.md) | Need a code pattern (script skeleton, error handling, collections, splatting, regex, pipeline functions, string building, hashtable lookups, safe property accessor helper, module structure, ShouldProcess+Force, etc.) |
 | [`resources/compatibility-and-clm.md`](resources/compatibility-and-clm.md) | Need PS5.1 vs PS7+ compatibility details, String.Split() changes, $IsWindows portability, or writing code that may run under AppLocker/WDAC (CLM) |
 | [`resources/traps-and-gotchas.md`](resources/traps-and-gotchas.md) | Debugging unexpected behaviour around nulls, booleans, comparison operators, pipeline output pollution, $PSBoundParameters, VerbosePreference in modules, PS class limitations, or defensive null-safe patterns (property access guards, ContainsKey null guards, hashtable key/value guards, null loop entries, Add-Member verification, array double-wrapping) |
 | [`resources/get-help-and-get-member.md`](resources/get-help-and-get-member.md) | Using an unfamiliar cmdlet or object — discover parameters, properties, and online docs before writing code |
